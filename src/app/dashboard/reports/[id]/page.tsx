@@ -261,26 +261,26 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
                 <span className="text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4"/>Submitted</span>
                 <span>{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center gap-2"><Tag className="h-4 w-4"/>Category</span>
-                <span className="font-medium">{report.category}</span>
+              <div className="flex items-start justify-between gap-4">
+                <span className="text-muted-foreground flex items-center gap-2 shrink-0"><Tag className="h-4 w-4"/>Category</span>
+                <span className="font-medium text-right break-words">{report.category}</span>
               </div>
               {isConfidential && report.reporter?.name && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground flex items-center gap-2"><User className="h-4 w-4"/>Reporter Name</span>
-                  <span className="font-medium">{report.reporter.name}</span>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-muted-foreground flex items-center gap-2 shrink-0"><User className="h-4 w-4"/>Reporter Name</span>
+                  <span className="font-medium text-right break-words">{report.reporter.name}</span>
                 </div>
               )}
                {isConfidential && report.reporter?.email && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground flex items-center gap-2"><User className="h-4 w-4"/>Reporter Email</span>
-                  <span className="font-medium">{report.reporter.email}</span>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-muted-foreground flex items-center gap-2 shrink-0"><User className="h-4 w-4"/>Reporter Email</span>
+                  <span className="font-medium text-right break-words">{report.reporter.email}</span>
                 </div>
               )}
                {isConfidential && report.reporter?.phone && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4"/>Reporter Phone</span>
-                  <span className="font-medium">{report.reporter.phone}</span>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-muted-foreground flex items-center gap-2 shrink-0"><Phone className="h-4 w-4"/>Reporter Phone</span>
+                  <span className="font-medium text-right break-words">{report.reporter.phone}</span>
                 </div>
               )}
             </CardContent>
