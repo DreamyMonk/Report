@@ -96,9 +96,9 @@ export async function submitReport(
   const content = formData.get('content') as string;
   const category = formData.get('category') as string;
   const submissionType = formData.get('submissionType') as 'anonymous' | 'confidential';
-  const name = formData.get('name') as string | undefined;
-  const email = formData.get('email') as string | undefined;
-  const phone = formData.get('phone') as string | undefined;
+  const name = formData.get('name') as string | null;
+  const email = formData.get('email') as string | null;
+  const phone = formData.get('phone') as string | null;
 
   if (!db) {
     return {
@@ -141,7 +141,7 @@ export async function submitReport(
       submissionType,
       reporter: {
         name: name || null,
-        email: submissionType === 'anonymous' ? null : email || null,
+        email: email || null,
         phone: phone || null,
       },
       submittedAt: serverTimestamp(),
@@ -174,10 +174,10 @@ export async function submitReport(
       success: true,
       reportId: reportId,
     };
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
     return {
-      message: 'An unexpected error occurred. Please try again later.',
+      message: e.message || 'An unexpected error occurred. Please try again later.',
       success: false,
     };
   }

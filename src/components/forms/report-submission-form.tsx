@@ -2,14 +2,12 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
 import { submitReport } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, FileUp, Download } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -44,28 +42,13 @@ export function ReportSubmissionForm() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [generatedId, setGeneratedId] = useState<string | null>(null);
   const firestore = useFirestore();
+  const [submissionType, setSubmissionType] = useState('anonymous');
 
   const categoriesQuery = useMemo(() => {
     if (!firestore) return null;
     return collection(firestore, 'categories');
   }, [firestore]);
   const { data: categories } = useCollection<Category>(categoriesQuery);
-
-
-  const form = useForm({
-    mode: 'onChange',
-    defaultValues: {
-      title: "",
-      category: "",
-      content: "",
-      submissionType: "anonymous",
-      name: "",
-      email: "",
-      phone: "",
-    },
-  });
-
-  const submissionType = form.watch("submissionType");
 
    const copyToClipboard = () => {
     if (generatedId) {
@@ -96,7 +79,11 @@ export function ReportSubmissionForm() {
     if (state.success && state.message && state.reportId) {
       setGeneratedId(state.reportId);
       setShowSuccessDialog(true);
-      form.reset();
+      // Resets the form fields
+      const form = document.getElementById('report-submission-form') as HTMLFormElement;
+      if(form) form.reset();
+      setSubmissionType('anonymous');
+
     } else if (!state.success && state.message) {
        toast({
         variant: "destructive",
@@ -104,178 +91,117 @@ export function ReportSubmissionForm() {
         description: state.message,
       });
     }
-  }, [state, toast, form]);
+  }, [state, toast]);
   
   return (
     <>
-    <Form {...form}>
-      <form
-        action={dispatch}
-        className="space-y-6"
-      >
-        <FormField
-          control={form.control}
+    <form
+      id="report-submission-form"
+      action={dispatch}
+      className="space-y-6"
+    >
+      <div className="space-y-3">
+        <Label>Submission Type</Label>
+        <RadioGroup
           name="submissionType"
-          render={({ field }) => (
-            <FormItem className="space-y-3">
-              <FormLabel>Submission Type</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                >
-                  <FormItem>
-                     <Label className="cursor-pointer">
-                      <Card className={`hover:border-primary/50 transition-colors ${field.value === 'anonymous' ? 'ring-2 ring-primary border-primary' : 'border-border'}`}>
-                          <CardContent className="p-4 flex items-center gap-4">
-                              <RadioGroupItem value="anonymous" id="anonymous" />
-                              <div className="space-y-1">
-                                  <p className="font-medium">Submit Anonymously</p>
-                                  <p className="text-sm text-muted-foreground">Your identity is completely hidden. You can optionally provide an email for updates.</p>
-                              </div>
-                          </CardContent>
-                      </Card>
-                     </Label>
-                  </FormItem>
-                  <FormItem>
-                     <Label className="cursor-pointer">
-                        <Card className={`hover:border-primary/50 transition-colors ${field.value === 'confidential' ? 'ring-2 ring-primary border-primary' : 'border-border'}`}>
-                          <CardContent className="p-4 flex items-center gap-4">
-                              <RadioGroupItem value="confidential" id="confidential" />
-                              <div className="space-y-1">
-                                  <p className="font-medium">Submit Confidentially</p>
-                                  <p className="text-sm text-muted-foreground">Your identity is shared only with the assigned case officer. Email is required.</p>
-                              </div>
-                          </CardContent>
-                        </Card>
-                     </Label>
-                  </FormItem>
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        {submissionType === 'confidential' && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Your Name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="your.email@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Your Phone Number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          onValueChange={setSubmissionType}
+          defaultValue={submissionType}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
+          <div>
+              <Label className="cursor-pointer">
+              <Card className={`hover:border-primary/50 transition-colors ${submissionType === 'anonymous' ? 'ring-2 ring-primary border-primary' : 'border-border'}`}>
+                  <CardContent className="p-4 flex items-center gap-4">
+                      <RadioGroupItem value="anonymous" id="anonymous" />
+                      <div className="space-y-1">
+                          <p className="font-medium">Submit Anonymously</p>
+                          <p className="text-sm text-muted-foreground">Your identity is completely hidden. You can optionally provide an email for updates.</p>
+                      </div>
+                  </CardContent>
+              </Card>
+              </Label>
           </div>
-        )}
-
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Report Title</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Unsafe working conditions in warehouse" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {categories?.map((cat) => (
-                    <SelectItem key={cat.docId} value={cat.label}>{cat.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="content"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Detailed Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Please provide as much detail as possible. Include dates, times, locations, and names of individuals involved if known."
-                  className="min-h-[150px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <div className="space-y-2">
-            <Label>Attachments (Optional)</Label>
-            <div className="flex items-center justify-center w-full">
-                <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/50 hover:bg-secondary">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <FileUp className="w-8 h-8 mb-4 text-muted-foreground" />
-                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p className="text-xs text-muted-foreground">PDF, PNG, JPG, or DOCX (MAX. 10MB)</p>
-                    </div>
-                    <Input id="dropzone-file" type="file" className="hidden" />
-                </Label>
+          <div>
+              <Label className="cursor-pointer">
+                <Card className={`hover:border-primary/50 transition-colors ${submissionType === 'confidential' ? 'ring-2 ring-primary border-primary' : 'border-border'}`}>
+                  <CardContent className="p-4 flex items-center gap-4">
+                      <RadioGroupItem value="confidential" id="confidential" />
+                      <div className="space-y-1">
+                          <p className="font-medium">Submit Confidentially</p>
+                          <p className="text-sm text-muted-foreground">Your identity is shared only with the assigned case officer. Email is required.</p>
+                      </div>
+                  </CardContent>
+                </Card>
+              </Label>
+          </div>
+        </RadioGroup>
+      </div>
+      
+      {submissionType === 'confidential' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input name="name" id="name" placeholder="Your Name" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email (Optional)</Label>
+                <Input name="email" id="email" placeholder="your.email@example.com" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number (Optional)</Label>
+              <Input name="phone" id="phone" placeholder="Your Phone Number" />
             </div>
         </div>
+      )}
 
-        <SubmitButton />
-      </form>
-    </Form>
+      <div className="space-y-2">
+        <Label htmlFor="title">Report Title</Label>
+        <Input name="title" id="title" placeholder="e.g., Unsafe working conditions in warehouse" required />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="category">Category</Label>
+        <Select name="category" required>
+          <SelectTrigger id="category">
+            <SelectValue placeholder="Select a category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories?.map((cat) => (
+              <SelectItem key={cat.docId} value={cat.label}>{cat.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="content">Detailed Description</Label>
+        <Textarea
+          name="content"
+          id="content"
+          placeholder="Please provide as much detail as possible. Include dates, times, locations, and names of individuals involved if known."
+          className="min-h-[150px]"
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+          <Label>Attachments (Optional)</Label>
+          <div className="flex items-center justify-center w-full">
+              <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/50 hover:bg-secondary">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <FileUp className="w-8 h-8 mb-4 text-muted-foreground" />
+                      <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                      <p className="text-xs text-muted-foreground">PDF, PNG, JPG, or DOCX (MAX. 10MB)</p>
+                  </div>
+                  <Input id="dropzone-file" type="file" className="hidden" />
+              </Label>
+          </div>
+      </div>
+
+      <SubmitButton />
+    </form>
     <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
       <AlertDialogContent>
         <AlertDialogHeader>
