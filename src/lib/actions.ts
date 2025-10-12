@@ -166,8 +166,6 @@ export async function submitReport(
     revalidatePath('/');
     revalidatePath('/track');
     revalidatePath('/dashboard');
-    revalidatePath('/dashboard/audit-log');
-    revalidatePath('/dashboard/settings');
 
     return {
       message: 'Your report has been submitted successfully.',
