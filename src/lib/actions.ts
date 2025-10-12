@@ -1,6 +1,7 @@
 
 'use server';
 
+import 'dotenv/config';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { serverTimestamp } from 'firebase-admin/firestore';
@@ -103,6 +104,13 @@ export async function submitReport(
   const name = formData.get('name') as string | undefined;
   const email = formData.get('email') as string | undefined;
   const phone = formData.get('phone') as string | undefined;
+  
+  if (!title || !content || !category) {
+    return {
+      message: 'Title, content, and category are required.',
+      success: false,
+    };
+  }
 
   try {
     const reportId = generateReportId();
@@ -121,10 +129,6 @@ export async function submitReport(
       submittedAt: serverTimestamp(),
       status: 'New',
       severity: 'Medium', // Default severity
-      aiSummary: '',
-      aiRiskAssessment: '',
-      aiSuggestedSteps: [],
-      aiReasoning: '',
       assignees: null,
     });
     
