@@ -17,10 +17,13 @@ import { useMemo, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAuth } from "@/firebase/auth-provider";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
+import { ScrollArea } from "../ui/scroll-area";
+import { Checkbox } from "../ui/checkbox";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 
 interface AssignCaseDialogProps {
   open: boolean;
@@ -40,12 +43,22 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (open) {
       setSelectedUserIds([]);
+      setSearchTerm('');
     }
   }, [open]);
+
+  const filteredUsers = useMemo(() => {
+      if (!users) return [];
+      return users.filter(u => 
+          u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          u.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+  }, [users, searchTerm]);
 
   const handleAssignCase = async () => {
     if (!firestore || !report.docId || !user || !userData) {
@@ -119,36 +132,40 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
           </DialogDescription>
         </DialogHeader>
         
-        <Command>
-            <CommandInput placeholder="Search for user..." />
-            <CommandList>
-                <CommandEmpty>No users found.</CommandEmpty>
-                <CommandGroup>
-                    {users?.map(user => {
+        <div className="space-y-4">
+            <Input 
+                placeholder="Search for user..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <ScrollArea className="h-[200px] border rounded-md p-2">
+                <div className="space-y-2">
+                    {filteredUsers?.map(user => {
                         const isSelected = selectedUserIds.includes(user.id);
                         return (
-                            <CommandItem
+                            <Label
                                 key={user.id}
-                                onSelect={() => toggleUserSelection(user.id)}
-                                className="cursor-pointer"
+                                className="flex items-center gap-3 p-2 rounded-md hover:bg-accent cursor-pointer"
                             >
-                                <div className="flex items-center justify-between w-full">
-                                  <div className="flex items-center gap-2">
-                                      <Avatar className="h-6 w-6">
-                                          <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                          <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
-                                      </Avatar>
-                                      <span>{user.name}</span>
-                                      <span className="text-xs text-muted-foreground">({user.email})</span>
-                                  </div>
-                                  <Check className={cn("h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                                <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={() => toggleUserSelection(user.id)}
+                                />
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                    <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-grow">
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-xs text-muted-foreground">{user.email}</p>
                                 </div>
-                            </CommandItem>
+                           </Label>
                         )
                     })}
-                </CommandGroup>
-            </CommandList>
-        </Command>
+                     {filteredUsers.length === 0 && <p className="text-center text-sm text-muted-foreground py-4">No users found.</p>}
+                </div>
+            </ScrollArea>
+        </div>
         
         <div className="py-2">
           <p className="text-sm font-medium mb-2">Selected Officers:</p>
@@ -156,6 +173,7 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
             {users?.filter(u => selectedUserIds.includes(u.id)).map(u => (
               <Badge key={u.id} variant="secondary">{u.name}</Badge>
             ))}
+             {selectedUserIds.length === 0 && <p className="text-xs text-muted-foreground">No officers selected.</p>}
           </div>
         </div>
 

@@ -17,10 +17,11 @@ import { useMemo, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAuth } from "@/firebase/auth-provider";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
+import { ScrollArea } from "../ui/scroll-area";
+import { Checkbox } from "../ui/checkbox";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 
 interface TransferCaseDialogProps {
   open: boolean;
@@ -41,6 +42,7 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
   const { data: users } = useCollection<User>(usersQuery);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
   const dialogTitle = mode === 'transfer' ? 'Transfer Case' : 'Add Assignee';
@@ -50,7 +52,6 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
   const buttonText = mode === 'transfer' ? 'Transfer Case' : 'Add Assignees';
   const loadingButtonText = mode === 'transfer' ? 'Transferring...' : 'Adding...';
 
-
   useEffect(() => {
     if (open) {
       if (mode === 'transfer') {
@@ -58,17 +59,28 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
       } else {
         setSelectedUserIds(report.assignees?.map(a => a.id) || []);
       }
+      setSearchTerm('');
     }
   }, [report, open, mode]);
-
+  
   const availableUsers = useMemo(() => {
     if (!users) return [];
-    if (mode === 'transfer') return users;
     
-    // In 'add' mode, only show users who are not already assignees
-    const currentAssigneeIds = report.assignees?.map(a => a.id) || [];
-    return users.filter(u => !currentAssigneeIds.includes(u.id));
-  }, [users, report, mode]);
+    let filtered = users;
+    if (mode === 'add') {
+        const currentAssigneeIds = report.assignees?.map(a => a.id) || [];
+        filtered = users.filter(u => !currentAssigneeIds.includes(u.id));
+    }
+    
+    if (searchTerm) {
+        return filtered.filter(u => 
+            u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.email.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }
+    return filtered;
+
+  }, [users, report, mode, searchTerm]);
 
 
   const handleUpdateAssignees = async () => {
@@ -100,10 +112,12 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
       
       const newAssignees = allSelectedUsers.filter(u => !(report.assignees || []).some(a => a.id === u.id));
       const newAssigneeNames = newAssignees.map(u => u.name).join(', ');
+      const transferredToNames = allSelectedUsers.map(u => u.name).join(', ');
+
 
       let actionText = '';
       if (mode === 'transfer') {
-        actionText = `transferred the case to ${newAssigneeNames}`;
+        actionText = `transferred the case to ${transferredToNames}`;
       } else {
         actionText = `added ${newAssigneeNames} to the case`;
       }
@@ -136,8 +150,6 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
   };
   
   const toggleUserSelection = (userId: string) => {
-    // For 'add' mode, we append. For 'transfer', we can allow multi-select or single-select.
-    // Current implementation allows multi-select for both.
     setSelectedUserIds(prev => 
       prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
     );
@@ -155,36 +167,43 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
           <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
         
-        <Command>
-            <CommandInput placeholder="Search for user..." />
-            <CommandList>
-                <CommandEmpty>No users found.</CommandEmpty>
-                <CommandGroup>
+        <div className="space-y-4">
+            <Input 
+                placeholder="Search for user..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <ScrollArea className="h-[200px] border rounded-md p-2">
+                <div className="space-y-2">
                     {availableUsers?.map(user => {
                         const isSelected = selectedUserIds.includes(user.id);
+                        const isAlreadyAssigned = mode === 'add' && (report.assignees?.some(a => a.id === user.id));
+
                         return (
-                            <CommandItem
+                             <Label
                                 key={user.id}
-                                onSelect={() => toggleUserSelection(user.id)}
-                                className="cursor-pointer"
+                                className="flex items-center gap-3 p-2 rounded-md hover:bg-accent cursor-pointer"
                             >
-                                <div className="flex items-center justify-between w-full">
-                                  <div className="flex items-center gap-2">
-                                      <Avatar className="h-6 w-6">
-                                          <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                          <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
-                                      </Avatar>
-                                       <span>{user.name}</span>
-                                      <span className="text-xs text-muted-foreground">({user.email})</span>
-                                  </div>
-                                  <Check className={cn("h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                                <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={() => toggleUserSelection(user.id)}
+                                    disabled={isAlreadyAssigned}
+                                />
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                    <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-grow">
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-xs text-muted-foreground">{user.email}</p>
                                 </div>
-                            </CommandItem>
+                           </Label>
                         )
                     })}
-                </CommandGroup>
-            </CommandList>
-        </Command>
+                     {availableUsers.length === 0 && <p className="text-center text-sm text-muted-foreground py-4">No users found.</p>}
+                </div>
+            </ScrollArea>
+        </div>
         
         <div className="py-2">
           <p className="text-sm font-medium mb-2">Final Assignees:</p>
@@ -192,6 +211,7 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
             {finalSelection.map(u => (
               <Badge key={u.id} variant="secondary">{u.name}</Badge>
             ))}
+             {finalSelection.length === 0 && <p className="text-xs text-muted-foreground">No officers selected.</p>}
           </div>
         </div>
 
