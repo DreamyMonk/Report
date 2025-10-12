@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUp, Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, Landmark, Building, Briefcase } from "lucide-react";
+import { FileUp, Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, Landmark, Building, Briefcase, UserCheck } from "lucide-react";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -77,10 +77,18 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
   const statusInfo: { [key: string]: { icon: React.ElementType, text: string }} = {
     New: { icon: FileText, text: "Report submitted and pending review." },
     "In Progress": { icon: Hourglass, text: "An investigation is currently underway." },
+    "Case Officer Assigned": { icon: UserCheck, text: "A case officer has been assigned and is reviewing the report." },
     Resolved: { icon: CheckCircle, text: "The investigation is complete and the case is closed." },
     Dismissed: { icon: XCircle, text: "The report has been reviewed and dismissed." },
     "Forwarded to Upper Management": { icon: Landmark, text: "This case has been forwarded for further review."}
   };
+
+  const isCaseAssigned = report.assignees && report.assignees.length > 0;
+  const isCaseClosed = report.status === 'Resolved' || report.status === 'Dismissed';
+  
+  const timelineStatus = isCaseAssigned ? "Case Officer Assigned" : "Report Submitted";
+  const customStatus = (report.status !== 'New' && report.status !== 'In Progress' && report.status !== 'Case Officer Assigned') ? report.status : null;
+
 
   const currentStatusInfo = statusInfo[report.status] || { icon: Hourglass, text: "The status has been updated."};
   const CurrentStatusIcon = currentStatusInfo.icon;
@@ -105,20 +113,33 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                            <div className="relative pl-6">
                               <div className="absolute left-0 top-0 h-full w-0.5 bg-border -translate-x-1/2 ml-3"></div>
                               
-                              <div className="relative mb-8">
-                                <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: currentStatusColor}}></div>
-                                <div className="pl-6">
-                                  <p className="font-semibold flex items-center gap-2"><CurrentStatusIcon className="h-4 w-4" />{report.status}</p>
-                                  <p className="text-sm text-muted-foreground">{currentStatusInfo.text}</p>
-                                  <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
+                              {customStatus && (
+                                <div className="relative mb-8">
+                                  <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: currentStatusColor}}></div>
+                                  <div className="pl-6">
+                                    <p className="font-semibold flex items-center gap-2"><CurrentStatusIcon className="h-4 w-4" />{customStatus}</p>
+                                    <p className="text-sm text-muted-foreground">{statusInfo[customStatus]?.text || "The case has been updated."}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
+                                  </div>
                                 </div>
-                              </div>
+                              )}
+                              
+                              {isCaseAssigned && (
+                                <div className="relative mb-8">
+                                    <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: statuses?.find(s => s.label === 'In Progress')?.color || '#f97316' }}></div>
+                                    <div className="pl-6">
+                                    <p className="font-semibold flex items-center gap-2"><UserCheck className="h-4 w-4" />Case Officer Assigned</p>
+                                    <p className="text-sm text-muted-foreground">A case officer has been assigned and is reviewing the report.</p>
+                                     <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
+                                    </div>
+                                </div>
+                              )}
                               
                                <div className="relative">
                                 <div className="absolute left-0 top-1 w-3 h-3 rounded-full bg-border"></div>
                                 <div className="pl-6">
                                   <p className="font-semibold flex items-center gap-2"><FileText className="h-4 w-4" />Report Submitted</p>
-                                  <p className="text-sm text-muted-foreground">The initial report was received.</p>
+                                  <p className="text-sm text-muted-foreground">The initial report was received and is awaiting assignment.</p>
                                    <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
                                 </div>
                               </div>
@@ -188,6 +209,10 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                             <CardTitle>Case Details</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm">
+                             <div className="flex items-center justify-between">
+                                <span className="text-muted-foreground flex items-center gap-2"><FileText className="h-4 w-4"/>Status</span>
+                                <span className="font-medium capitalize">{report.status}</span>
+                            </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4"/>Submitted</span>
                                 <span>{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</span>
@@ -228,3 +253,5 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     </div>
   );
 }
+
+    

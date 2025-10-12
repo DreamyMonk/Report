@@ -143,10 +143,13 @@ export async function initializeData(db: Firestore) {
   const statusesSnapshot = await statusesCollection.get();
   if (statusesSnapshot.empty) {
     const defaultStatuses = [
-      { label: 'New', color: '#3b82f6' },
-      { label: 'In Progress', color: '#f97316' },
-      { label: 'Resolved', color: '#22c55e' },
-      { label: 'Dismissed', color: '#64748b' },
+      { label: 'Report Submitted', color: '#64748b', isDefault: true },
+      { label: 'Case Officer Assigned', color: '#f97316', isDefault: true },
+      { label: 'Case Closed', color: '#22c55e', isDefault: true },
+      { label: 'New', color: '#3b82f6', isDefault: false }, // Internal status
+      { label: 'In Progress', color: '#f97316', isDefault: false }, // Internal status
+      { label: 'Resolved', color: '#22c55e', isDefault: false }, // Maps to Case Closed
+      { label: 'Dismissed', color: '#ef4444', isDefault: false }
     ];
     for (const status of defaultStatuses) {
       await statusesCollection.add(status);
@@ -191,3 +194,5 @@ export async function initializeData(db: Firestore) {
      console.log('Seeded default content.');
   }
 }
+
+    

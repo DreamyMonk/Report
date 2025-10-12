@@ -52,6 +52,7 @@ export type CaseStatus = {
     docId?: string;
     label: string;
     color: string;
+    isDefault?: boolean;
 }
 
 export type AuditLog = {
@@ -81,3 +82,5 @@ export type AppContent = {
     docId?: string;
     submissionGuidelines: string;
 }
+
+    
