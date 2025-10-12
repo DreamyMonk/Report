@@ -306,11 +306,11 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
                             </Avatar>
                             <div>
                                 <p className="text-sm font-medium leading-none">{assignee.name || assignee.email}</p>
-                                {assignee.name && <p className="text-sm text-muted-foreground">{assignee.email}</p>}
+                                {assignee.name && assignee.email && <p className="text-sm text-muted-foreground">{assignee.email}</p>}
                             </div>
                         </div>
                     ))}
-                    <div className="flex gap-2 pt-4">
+                    <div className="flex flex-col gap-2 pt-4">
                         <Button variant="outline" className="w-full" onClick={() => openAssignDialog('transfer')}>
                             <Replace className="mr-2 h-4 w-4" /> Transfer Case
                         </Button>
@@ -341,5 +341,3 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
     </div>
   );
 }
-
-    
