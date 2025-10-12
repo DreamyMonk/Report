@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Report, User } from "@/lib/types";
 import { useCollection, useFirestore } from "@/firebase";
 import { collection, query, where, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAuth } from "@/firebase/auth-provider";
@@ -37,9 +37,17 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
   }, [firestore]);
 
   const { data: users } = useCollection<User>(usersQuery);
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(report.assignees?.map(u => u.id) || []);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (report?.assignees) {
+      setSelectedUserIds(report.assignees.map(u => u.id));
+    } else {
+      setSelectedUserIds([]);
+    }
+  }, [report]);
 
   const handleAssignCase = async () => {
     if (!firestore || !report.docId || !user) {
@@ -130,7 +138,7 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
                                 <div className="flex items-center gap-2">
                                     <Avatar className="h-6 w-6">
                                         <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                        <AvatarFallback>{user.name ? user.name.charAt(0) : 'U'}</AvatarFallback>
+                                        <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
                                     </Avatar>
                                     <span>{user.name || 'Unnamed User'}</span>
                                 </div>
@@ -154,7 +162,7 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleAssignCase} disabled={isLoading || selectedUserIds.length === 0}>
-            {isLoading ? "Updating..." : report.assignees ? "Update Assignees" : "Assign Case"}
+            {isLoading ? "Updating..." : "Update Assignees"}
           </Button>
         </DialogFooter>
       </DialogContent>
