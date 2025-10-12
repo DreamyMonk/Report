@@ -42,7 +42,9 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
   const { toast } = useToast();
 
   useEffect(() => {
-    setSelectedUserIds([]);
+    if (open) {
+      setSelectedUserIds([]);
+    }
   }, [open]);
 
   const handleAssignCase = async () => {
@@ -136,7 +138,8 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
                                           <AvatarImage src={user.avatarUrl} alt={user.name} />
                                           <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
                                       </Avatar>
-                                      <span>{user.name} ({user.email})</span>
+                                      <span>{user.name}</span>
+                                      <span className="text-xs text-muted-foreground">({user.email})</span>
                                   </div>
                                   <Check className={cn("h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
                                 </div>

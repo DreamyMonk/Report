@@ -47,7 +47,9 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
   const dialogDescription = mode === 'transfer' 
     ? "Select new case officers. The previous assignees will be replaced." 
     : "Select additional case officers to add to this report.";
-  const buttonText = mode === 'transfer' ? 'Transfer Case' : 'Add Assignee';
+  const buttonText = mode === 'transfer' ? 'Transfer Case' : 'Add Assignees';
+  const loadingButtonText = mode === 'transfer' ? 'Transferring...' : 'Adding...';
+
 
   useEffect(() => {
     if (open) {
@@ -60,7 +62,10 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
   }, [report, open, mode]);
 
   const availableUsers = useMemo(() => {
-    if (!users || mode !== 'add') return users;
+    if (!users) return [];
+    if (mode === 'transfer') return users;
+    
+    // In 'add' mode, only show users who are not already assignees
     const currentAssigneeIds = report.assignees?.map(a => a.id) || [];
     return users.filter(u => !currentAssigneeIds.includes(u.id));
   }, [users, report, mode]);
@@ -79,11 +84,11 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
     setIsLoading(true);
     
     try {
-      const selectedUsers = users?.filter(u => selectedUserIds.includes(u.id)) || [];
+      const allSelectedUsers = users?.filter(u => selectedUserIds.includes(u.id)) || [];
       const reportRef = doc(firestore, 'reports', report.docId);
       
       await updateDoc(reportRef, {
-        assignees: selectedUsers.map(u => ({
+        assignees: allSelectedUsers.map(u => ({
           id: u.id,
           name: u.name,
           email: u.email,
@@ -92,9 +97,17 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
           department: u.department,
         })),
       });
+      
+      const newAssignees = allSelectedUsers.filter(u => !(report.assignees || []).some(a => a.id === u.id));
+      const newAssigneeNames = newAssignees.map(u => u.name).join(', ');
 
-      const assigneeNames = selectedUsers.map(u => u.name).join(', ');
-      const actionText = mode === 'transfer' ? `transferred the case to ${assigneeNames}` : `added ${assigneeNames} to the case`;
+      let actionText = '';
+      if (mode === 'transfer') {
+        actionText = `transferred the case to ${newAssigneeNames}`;
+      } else {
+        actionText = `added ${newAssigneeNames} to the case`;
+      }
+
 
       await addDoc(collection(firestore, 'audit_logs'), {
         reportId: report.docId,
@@ -108,7 +121,7 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
       
       toast({
         title: "Case Updated",
-        description: `Case assignees have been updated.`,
+        description: `Case assignees have been updated successfully.`,
       });
       onOpenChange(false);
     } catch (error: any) {
@@ -123,10 +136,16 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
   };
   
   const toggleUserSelection = (userId: string) => {
+    // For 'add' mode, we append. For 'transfer', we can allow multi-select or single-select.
+    // Current implementation allows multi-select for both.
     setSelectedUserIds(prev => 
       prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
     );
   };
+
+  const finalSelection = useMemo(() => {
+     return users?.filter(u => selectedUserIds.includes(u.id)) || [];
+  }, [users, selectedUserIds])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -155,7 +174,8 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
                                           <AvatarImage src={user.avatarUrl} alt={user.name} />
                                           <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
                                       </Avatar>
-                                      <span>{user.name} ({user.email})</span>
+                                       <span>{user.name}</span>
+                                      <span className="text-xs text-muted-foreground">({user.email})</span>
                                   </div>
                                   <Check className={cn("h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
                                 </div>
@@ -167,9 +187,9 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
         </Command>
         
         <div className="py-2">
-          <p className="text-sm font-medium mb-2">Selected Officers:</p>
+          <p className="text-sm font-medium mb-2">Final Assignees:</p>
           <div className="flex flex-wrap gap-2 min-h-[24px]">
-            {users?.filter(u => selectedUserIds.includes(u.id)).map(u => (
+            {finalSelection.map(u => (
               <Badge key={u.id} variant="secondary">{u.name}</Badge>
             ))}
           </div>
@@ -178,7 +198,7 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleUpdateAssignees} disabled={isLoading || selectedUserIds.length === 0}>
-            {isLoading ? "Updating..." : buttonText}
+            {isLoading ? loadingButtonText : buttonText}
           </Button>
         </DialogFooter>
       </DialogContent>
