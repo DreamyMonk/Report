@@ -310,5 +310,3 @@ export function ReportSubmissionForm() {
     </>
   );
 }
-
-    

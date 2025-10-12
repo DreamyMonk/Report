@@ -259,5 +259,3 @@ export async function createAdminUser(prevState: { message: string | null, succe
   adminData.append('role', 'admin');
   return inviteUser(prevState, adminData);
 }
-
-    
