@@ -80,6 +80,32 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-headline text-3xl font-bold tracking-tight">Settings</h1>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Branding</CardTitle>
+          <CardDescription>
+            Customize the look and feel of your portal.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+           <div>
+            <h3 className="font-medium mb-4">Portal Logo</h3>
+            <div className="flex items-center gap-4">
+              <div className="space-y-2 flex-grow">
+                <Label htmlFor="logo-upload">Upload Logo</Label>
+                <Input 
+                  id="logo-upload" 
+                  type="file"
+                />
+              </div>
+              <div className="self-end">
+                 <Button disabled>Upload</Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       
       <Card>
         <CardHeader>

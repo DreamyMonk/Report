@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCollection, useFirestore } from "@/firebase";
@@ -29,7 +30,7 @@ export default function UsersPage() {
                 <CardContent className="p-4 flex items-center gap-4">
                      <Avatar className="h-12 w-12">
                         <AvatarImage src={user.avatarUrl} alt={user.name} />
-                        <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        <AvatarFallback>{user.name ? user.name.split(' ').map(n => n[0]).join('') : 'U'}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                         <p className="font-semibold">{user.name}</p>
