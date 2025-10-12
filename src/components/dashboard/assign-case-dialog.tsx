@@ -130,9 +130,9 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
                                 <div className="flex items-center gap-2">
                                     <Avatar className="h-6 w-6">
                                         <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                        <AvatarFallback>{user.name ? user.name.charAt(0) : 'U'}</AvatarFallback>
                                     </Avatar>
-                                    <span>{user.name}</span>
+                                    <span>{user.name || 'Unnamed User'}</span>
                                 </div>
                                 <Check className={cn("h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
                             </CommandItem>
