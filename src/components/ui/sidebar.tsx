@@ -322,7 +322,7 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "flex-1 flex-col transition-[margin-left] duration-200 ease-linear md:ml-[--sidebar-width] group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:md:ml-[--sidebar-width-icon]",
+        "flex-1",
         className
       )}
       {...props}

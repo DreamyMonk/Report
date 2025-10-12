@@ -6,7 +6,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Logo } from "@/components/icons/logo";
@@ -15,6 +14,7 @@ import { UserNav } from "@/components/layout/user-nav";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { FirebaseErrorListener } from "@/components/firebase-error-listener";
+import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({
   children,
@@ -76,7 +76,9 @@ export default function DashboardLayout({
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset>
+        <div className={cn(
+          "flex flex-1 flex-col transition-[margin-left] duration-200 ease-linear md:ml-[--sidebar-width] group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:md:ml-[--sidebar-width-icon]"
+        )}>
           <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <div className="flex items-center gap-2">
                <SidebarTrigger className="md:hidden" />
@@ -88,7 +90,7 @@ export default function DashboardLayout({
             <UserNav />
           </header>
           <main className="flex-1 p-4 sm:p-6">{children}</main>
-        </SidebarInset>
+        </div>
       </div>
       <FirebaseErrorListener />
     </SidebarProvider>
