@@ -63,7 +63,6 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
     
     try {
       const selectedUsers = users?.filter(u => selectedUserIds.includes(u.id)) || [];
-      
       const reportRef = doc(firestore, 'reports', report.docId);
       
       await updateDoc(reportRef, {
@@ -80,6 +79,7 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
 
       const currentUser = users?.find(u => u.id === user.uid);
       const assigneeNames = selectedUsers.map(u => u.name).join(', ');
+
       await addDoc(collection(firestore, 'audit_logs'), {
         reportId: report.docId,
         actor: {
