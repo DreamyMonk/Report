@@ -19,6 +19,8 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { ShareReportDialog } from "@/components/dashboard/share-report-dialog";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
@@ -50,33 +52,42 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
   const { data: messages, loading: messagesLoading } = useCollection<Message>(messagesQuery);
   const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!message.trim() || !firestore || !report || !userData) return;
 
-    try {
-      await addDoc(collection(firestore, 'reports', report.docId!, 'messages'), {
-        content: message,
-        sentAt: serverTimestamp(),
-        sender: 'officer',
-        senderInfo: {
-          id: userData.id,
-          name: userData.name,
-          avatarUrl: userData.avatarUrl
-        }
+    const messagesCollection = collection(firestore, 'reports', report.docId!, 'messages');
+    const messageData = {
+      content: message,
+      sentAt: serverTimestamp(),
+      sender: 'officer' as const,
+      senderInfo: {
+        id: userData.id,
+        name: userData.name,
+        avatarUrl: userData.avatarUrl,
+      },
+    };
+    
+    addDoc(messagesCollection, messageData)
+      .then(() => {
+        setMessage('');
+        toast({
+          title: "Message sent!",
+        });
+      })
+      .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: messagesCollection.path,
+          operation: 'create',
+          requestResourceData: messageData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to send message.'
+        });
       });
-      setMessage('');
-      toast({
-        title: "Message sent!",
-      });
-    } catch (error) {
-      console.error("Error sending message: ", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to send message.",
-      });
-    }
-  }
+  };
   
   const handleStatusChange = async (statusId: string) => {
     if (!firestore || !report?.docId || !statuses || !userData || !user) return;

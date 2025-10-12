@@ -15,6 +15,8 @@ import { Report, Message, CaseStatus } from "@/lib/types";
 import { collection, doc, query, where, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function TrackReportDetailPage({ params }: { params: { id: string } }) {
   const [message, setMessage] = useState('');
@@ -43,28 +45,37 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
 
   const { data: messages, loading: messagesLoading } = useCollection<Message>(messagesQuery);
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!message.trim() || !firestore || !report) return;
 
-    try {
-      await addDoc(collection(firestore, 'reports', report.docId!, 'messages'), {
-        content: message,
-        sentAt: serverTimestamp(),
-        sender: 'reporter',
+    const messagesCollection = collection(firestore, 'reports', report.docId!, 'messages');
+    const messageData = {
+      content: message,
+      sentAt: serverTimestamp(),
+      sender: 'reporter' as const,
+    };
+
+    addDoc(messagesCollection, messageData)
+      .then(() => {
+        setMessage('');
+        toast({
+          title: "Message sent!",
+        });
+      })
+      .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: messagesCollection.path,
+          operation: 'create',
+          requestResourceData: messageData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to send message.'
+        });
       });
-      setMessage('');
-      toast({
-        title: "Message sent!",
-      });
-    } catch (error) {
-      console.error("Error sending message: ", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to send message.",
-      });
-    }
-  }
+  };
 
   if (reportsLoading) {
     return <div className="text-center p-12">Loading report...</div>
@@ -253,5 +264,3 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     </div>
   );
 }
-
-    
