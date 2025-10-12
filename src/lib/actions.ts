@@ -1,9 +1,9 @@
 
 'use server';
 
-import 'dotenv/config';
 import { getFirebaseAdmin } from '@/firebase/server';
 import { revalidatePath } from 'next/cache';
+import type { Firestore } from 'firebase-admin/firestore';
 
 export async function createAdminUser(prevState: any, formData: FormData) {
   try {
@@ -31,7 +31,7 @@ export async function createAdminUser(prevState: any, formData: FormData) {
     });
     
     // Seed initial data
-    await initializeData();
+    await initializeData(db);
 
     return { message: `Admin user ${email} created successfully. You can now log in.`, success: true };
   } catch (error: any) {
@@ -99,8 +99,7 @@ export async function updatePassword(prevState: any, formData: FormData) {
 }
 
 
-export async function initializeData() {
-  const { db } = getFirebaseAdmin();
+export async function initializeData(db: Firestore) {
   if (!db) {
     console.error('Database not initialized, skipping data seeding.');
     return;
