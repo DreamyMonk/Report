@@ -40,14 +40,14 @@ const ReportSchema = z.object({
   phone: z.string().optional(),
 }).refine(data => {
   if (data.submissionType === 'confidential') {
-    return !!data.email && z.string().email().safeParse(data.email).success;
+    return !!data.name && data.name.length > 0;
   }
   return true;
 }, {
-  message: "A valid email is required for confidential submissions.",
-  path: ["email"],
+  message: "Name is required for confidential submissions.",
+  path: ["name"],
 }).refine(data => {
-  if (data.submissionType === 'anonymous' && data.email && data.email.length > 0) {
+  if (data.email && data.email.length > 0) {
      return z.string().email().safeParse(data.email).success;
   }
   return true;
@@ -190,7 +190,7 @@ export function ReportSubmissionForm() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name (Optional)</FormLabel>
+                      <FormLabel>Name (Required)</FormLabel>
                       <FormControl>
                         <Input placeholder="Your Name" {...field} />
                       </FormControl>
@@ -203,7 +203,7 @@ export function ReportSubmissionForm() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email (Required)</FormLabel>
+                      <FormLabel>Email (Optional)</FormLabel>
                       <FormControl>
                         <Input placeholder="your.email@example.com" {...field} />
                       </FormControl>
@@ -227,24 +227,6 @@ export function ReportSubmissionForm() {
               />
           </div>
         )}
-        
-         {submissionType === 'anonymous' && (
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email for Updates (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="your.email@example.com" {...field} />
-                  </FormControl>
-                   <p className="text-xs text-muted-foreground">Provide an email if you want to receive notifications about your case.</p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-        )}
-
 
         <FormField
           control={form.control}

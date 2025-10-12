@@ -24,22 +24,18 @@ const ReportSchema = z
   .refine(
     (data) => {
       if (data.submissionType === 'confidential') {
-        return !!data.email && z.string().email().safeParse(data.email).success;
+        return !!data.name && data.name.length > 0;
       }
       return true;
     },
     {
-      message: 'A valid email is required for confidential submissions.',
-      path: ['email'],
+      message: 'Name is required for confidential submissions.',
+      path: ['name'],
     }
   )
   .refine(
     (data) => {
-      if (
-        data.submissionType === 'anonymous' &&
-        data.email &&
-        data.email.length > 0
-      ) {
+      if (data.email && data.email.length > 0) {
         return z.string().email().safeParse(data.email).success;
       }
       return true;
