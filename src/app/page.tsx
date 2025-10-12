@@ -33,7 +33,7 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-1 bg-secondary/50 py-12">
-        <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+        <div className="container mx-auto max-w-4xl space-y-12">
              <Card className="w-full">
                 <CardHeader>
                     <CardTitle className="font-headline text-3xl">Submit a Report</CardTitle>
@@ -46,7 +46,7 @@ export default function Home() {
                 </CardContent>
             </Card>
             <div className="space-y-6 pt-2">
-                <h2 className="font-headline text-2xl font-bold">How to Submit a Good Report</h2>
+                <h2 className="font-headline text-2xl font-bold text-center">How to Submit a Good Report</h2>
                  <Card>
                     <CardContent className="p-6">
                          <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
