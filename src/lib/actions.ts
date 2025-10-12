@@ -1,5 +1,6 @@
 
 'use server';
+import 'dotenv/config';
 
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -26,7 +27,7 @@ export async function createAdminUser(prevState: any, formData: FormData) {
 
     await getFirestore().collection('users').doc(userRecord.uid).set({
       id: userRecord.uid,
-      name: name,
+      name: name, // This line ensures the name is saved
       email: email,
       role: 'admin',
       avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
