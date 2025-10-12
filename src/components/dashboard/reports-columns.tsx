@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Report } from "@/lib/types";
+import { Report, CaseStatus } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { ReportTableActions } from "./reports-table-actions";
 import { Shield, ShieldAlert, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 
-export const getColumns = (): ColumnDef<Report>[] => [
+export const getColumns = (statuses: CaseStatus[]): ColumnDef<Report>[] => [
   {
     accessorKey: "title",
     header: ({ column }) => (
@@ -39,7 +39,14 @@ export const getColumns = (): ColumnDef<Report>[] => [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("status")}</div>,
+    cell: ({ row }) => {
+      const statusLabel = row.getValue("status") as string;
+      const status = statuses.find(s => s.label === statusLabel);
+      if (status) {
+         return <div className="capitalize rounded-full px-2 py-0.5 text-xs font-medium text-white text-center" style={{ backgroundColor: status.color }}>{statusLabel}</div>;
+      }
+      return <div className="capitalize">{statusLabel}</div>;
+    },
   },
   {
     accessorKey: "assignee",

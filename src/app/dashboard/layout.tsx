@@ -10,7 +10,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Logo } from "@/components/icons/logo";
-import { Home, FileText, Settings, Search, Users } from "lucide-react";
+import { Home, FileText, Settings, Search, Users, History } from "lucide-react";
 import { UserNav } from "@/components/layout/user-nav";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
@@ -54,6 +54,14 @@ export default function DashboardLayout({
                   <Link href="/dashboard/users">
                     <Users />
                     <span>Users</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/audit-log">
+                    <History />
+                    <span>Audit Log</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

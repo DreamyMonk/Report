@@ -5,12 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUp, Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar } from "lucide-react";
+import { FileUp, Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, FolderUp, Landmark } from "lucide-react";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useCollection, useFirestore } from "@/firebase";
-import { Report, Message } from "@/lib/types";
+import { Report, Message, CaseStatus } from "@/lib/types";
 import { collection, doc, query, where, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -24,8 +24,14 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     if (!firestore) return null;
     return query(collection(firestore, 'reports'), where('id', '==', params.id.toUpperCase()));
   }, [firestore, params.id]);
+  
+  const statusesQuery = useMemo(() => {
+    if(!firestore) return null;
+    return query(collection(firestore, 'statuses'));
+  }, [firestore]);
 
   const { data: reports, loading: reportsLoading } = useCollection<Report>(reportsQuery);
+  const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
   
   const report = useMemo(() => reports?.[0], [reports]);
 
@@ -67,14 +73,18 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     notFound();
   }
 
-  const statusInfo: { [key: string]: { icon: React.ElementType, color: string, text: string }} = {
-    New: { icon: FileText, color: "bg-blue-500", text: "Report submitted and pending review." },
-    "In Progress": { icon: Hourglass, color: "bg-yellow-500", text: "An investigation is currently underway." },
-    Resolved: { icon: CheckCircle, color: "bg-green-500", text: "The investigation is complete and the case is closed." },
-    Dismissed: { icon: XCircle, color: "bg-gray-500", text: "The report has been reviewed and dismissed." },
+  const statusInfo: { [key: string]: { icon: React.ElementType, text: string }} = {
+    New: { icon: FileText, text: "Report submitted and pending review." },
+    "In Progress": { icon: Hourglass, text: "An investigation is currently underway." },
+    Resolved: { icon: CheckCircle, text: "The investigation is complete and the case is closed." },
+    Dismissed: { icon: XCircle, text: "The report has been reviewed and dismissed." },
+    "Forwarded to Upper Management": { icon: Landmark, text: "This case has been forwarded for further review."}
   };
 
-  const CurrentStatusIcon = statusInfo[report.status].icon;
+  const currentStatusInfo = statusInfo[report.status] || { icon: Hourglass, text: "The status has been updated."};
+  const CurrentStatusIcon = currentStatusInfo.icon;
+  const currentStatusColor = statuses?.find(s => s.label === report.status)?.color || '#64748b';
+  const isResolved = report.status === 'Resolved';
 
   return (
     <div className="min-h-screen bg-secondary/50">
@@ -95,10 +105,10 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                               <div className="absolute left-0 top-0 h-full w-0.5 bg-border -translate-x-1/2 ml-3"></div>
                               
                               <div className="relative mb-8">
-                                <div className={`absolute left-0 top-1 w-3 h-3 rounded-full ${statusInfo[report.status].color}`}></div>
+                                <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: currentStatusColor}}></div>
                                 <div className="pl-6">
                                   <p className="font-semibold flex items-center gap-2"><CurrentStatusIcon className="h-4 w-4" />{report.status}</p>
-                                  <p className="text-sm text-muted-foreground">{statusInfo[report.status].text}</p>
+                                  <p className="text-sm text-muted-foreground">{currentStatusInfo.text}</p>
                                   <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
                                 </div>
                               </div>
@@ -118,7 +128,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                     <Card>
                         <CardHeader>
                             <CardTitle>Communication Channel</CardTitle>
-                            <CardDescription>Securely communicate with the case officer. Your identity remains protected.</CardDescription>
+                            <CardDescription>{isResolved ? 'This case is resolved. The chat is closed.' : 'Securely communicate with the case officer. Your identity remains protected.'}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
@@ -154,13 +164,13 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                                 </div>
 
                                 <div className="pt-4 space-y-3 border-t">
-                                    <Textarea placeholder="Type your message..." value={message} onChange={(e) => setMessage(e.target.value)} />
+                                    <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved}/>
                                      <div className="flex justify-between items-center">
-                                         <Button variant="outline" size="sm" asChild>
+                                         <Button variant="outline" size="sm" asChild disabled={isResolved}>
                                              <Label htmlFor="file-upload"><FileUp className="mr-2 h-4 w-4"/> Attach File</Label>
                                          </Button>
-                                         <Input id="file-upload" type="file" className="hidden" />
-                                        <Button size="sm" onClick={handleSendMessage} disabled={!message.trim()}>
+                                         <Input id="file-upload" type="file" className="hidden" disabled={isResolved}/>
+                                        <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isResolved}>
                                             <Send className="mr-2 h-4 w-4"/>Send Message
                                         </Button>
                                     </div>

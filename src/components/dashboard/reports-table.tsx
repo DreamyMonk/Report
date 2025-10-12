@@ -36,14 +36,25 @@ import {
 } from "@/components/ui/table";
 import type { Report } from "@/lib/types";
 import { getColumns } from "./reports-columns";
+import { useCollection, useFirestore } from "@/firebase";
+import { CaseStatus } from "@/lib/types";
+import { collection, query } from "firebase/firestore";
 
 export function ReportsTable({ reports }: { reports: Report[] }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  
+  const firestore = useFirestore();
+  const statusesQuery = React.useMemo(() => {
+    if(!firestore) return null;
+    return query(collection(firestore, 'statuses'));
+  }, [firestore]);
+  const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
 
-  const columns = React.useMemo(() => getColumns(), []);
+
+  const columns = React.useMemo(() => getColumns(statuses || []), [statuses]);
 
   const table = useReactTable({
     data: reports,

@@ -16,7 +16,7 @@ export type Report = {
   content: string;
   category: "Financial" | "HR" | "Safety" | "Other";
   submittedAt: Timestamp;
-  status: "New" | "In Progress" | "Resolved" | "Dismissed";
+  status: string;
   severity: "Low" | "Medium" | "High";
   assignee: User | null;
   submissionType: "anonymous" | "confidential";
@@ -41,4 +41,21 @@ export type Message = {
     avatarUrl: string;
   };
   fileUrl?: string;
+}
+
+export type CaseStatus = {
+    docId?: string;
+    label: string;
+    color: string;
+}
+
+export type AuditLog = {
+    docId?: string;
+    reportId: string;
+    actor: {
+        id: string;
+        name: string;
+    };
+    action: string;
+    timestamp: Timestamp;
 }

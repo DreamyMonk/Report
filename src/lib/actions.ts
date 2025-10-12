@@ -5,7 +5,7 @@ import { classifyReportSeverity } from '@/ai/flows/classify-report-severity';
 import { summarizeReport } from '@/ai/flows/summarize-report-for-review';
 import { suggestInvestigationSteps } from '@/ai/flows/suggest-investigation-steps';
 import { revalidatePath } from 'next/cache';
-import { serverTimestamp } from 'firebase-admin/firestore';
+import { serverTimestamp, FieldValue } from 'firebase-admin/firestore';
 import { db, auth } from '@/firebase/server';
 
 const ReportSchema = z
@@ -69,10 +69,35 @@ function generateReportId() {
   return `${prefix}-${timestamp}-${randomPart}`.toUpperCase();
 }
 
+async function initializeDefaultStatuses() {
+  if (!db) return;
+  
+  const statusesRef = db.collection('statuses');
+  const snapshot = await statusesRef.limit(1).get();
+
+  if (snapshot.empty) {
+    const batch = db.batch();
+    const defaultStatuses = [
+      { label: 'New', color: '#3b82f6' },
+      { label: 'In Progress', color: '#f97316' },
+      { label: 'Resolved', color: '#22c55e' },
+      { label: 'Dismissed', color: '#64748b' },
+      { label: 'Forwarded to Upper Management', color: '#8b5cf6' },
+    ];
+    defaultStatuses.forEach(status => {
+      const docRef = statusesRef.doc();
+      batch.set(docRef, status);
+    });
+    await batch.commit();
+    console.log('Default statuses initialized.');
+  }
+}
+
 export async function submitReport(
   prevState: State,
   formData: FormData
 ): Promise<State> {
+  await initializeDefaultStatuses();
 
   const validatedFields = ReportSchema.safeParse({
     title: formData.get('title'),
@@ -116,7 +141,7 @@ export async function submitReport(
     
     const reportId = generateReportId();
 
-    await db.collection('reports').add({
+    const reportRef = await db.collection('reports').add({
       id: reportId,
       title,
       content,
@@ -136,9 +161,19 @@ export async function submitReport(
       assignee: null,
     });
     
+    // Add to audit log
+    await db.collection('audit_logs').add({
+        reportId: reportRef.id,
+        actor: { id: 'system', name: 'System' },
+        action: 'submitted a new report',
+        timestamp: serverTimestamp()
+    });
+
+    
     revalidatePath('/');
     revalidatePath('/track');
     revalidatePath('/dashboard');
+    revalidatePath('/dashboard/audit-log');
 
     return {
       message: 'Your report has been submitted successfully.',

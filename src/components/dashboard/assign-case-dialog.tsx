@@ -11,11 +11,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Report, User } from "@/lib/types";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, where, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { useAuth } from "@/firebase/auth-provider";
 
 interface AssignCaseDialogProps {
   open: boolean;
@@ -25,6 +26,7 @@ interface AssignCaseDialogProps {
 
 export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialogProps) {
   const firestore = useFirestore();
+  const { user } = useAuth();
   const usersQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'), where('role', 'in', ['admin', 'officer']));
@@ -36,7 +38,7 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
   const { toast } = useToast();
 
   const handleAssignCase = async () => {
-    if (!firestore || !report.docId || !selectedUserId) {
+    if (!firestore || !report.docId || !selectedUserId || !user) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -63,6 +65,18 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
           avatarUrl: selectedUser.avatarUrl,
         },
         status: 'In Progress'
+      });
+
+      // Add to audit log
+      const currentUser = users?.find(u => u.id === user.uid);
+      await addDoc(collection(firestore, 'audit_logs'), {
+        reportId: report.docId,
+        actor: {
+          id: user.uid,
+          name: currentUser?.name || user.displayName || 'System'
+        },
+        action: `assigned the case to ${selectedUser.name}`,
+        timestamp: serverTimestamp()
       });
       
       toast({

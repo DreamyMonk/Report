@@ -4,22 +4,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { useCollection, useDoc, useFirestore } from "@/firebase";
-import { Report, Message, User as AppUser } from "@/lib/types";
-import { collection, doc, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
+import { Report, Message, User as AppUser, CaseStatus } from "@/lib/types";
+import { collection, doc, query, orderBy, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { AssignCaseDialog } from "@/components/dashboard/assign-case-dialog";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/firebase/auth-provider";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
   const [message, setMessage] = useState('');
   const firestore = useFirestore();
-  const { userData } = useAuth();
+  const { userData, user } = useAuth();
   const { toast } = useToast();
 
   const reportRef = useMemo(() => {
@@ -33,8 +37,14 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
     if (!firestore || !report) return null;
     return query(collection(firestore, 'reports', report.docId!, 'messages'), orderBy('sentAt', 'asc'));
   }, [firestore, report]);
+  
+  const statusesQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'statuses'), orderBy('label'));
+  }, [firestore]);
 
   const { data: messages, loading: messagesLoading } = useCollection<Message>(messagesQuery);
+  const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
 
   const handleSendMessage = async () => {
     if (!message.trim() || !firestore || !report || !userData) return;
@@ -63,6 +73,46 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
       });
     }
   }
+  
+  const handleStatusChange = async (statusId: string) => {
+    if (!firestore || !report?.docId || !statuses || !userData || !user) return;
+    const selectedStatus = statuses.find(s => s.docId === statusId);
+    if (!selectedStatus) return;
+
+    try {
+      const reportRef = doc(firestore, 'reports', report.docId);
+      await updateDoc(reportRef, {
+        status: selectedStatus.label,
+      });
+
+      // Add to audit log
+      await addDoc(collection(firestore, 'audit_logs'), {
+        reportId: report.docId,
+        actor: {
+          id: user.uid,
+          name: userData.name,
+        },
+        action: `changed status from "${report.status}" to "${selectedStatus.label}"`,
+        timestamp: serverTimestamp(),
+      });
+
+      toast({
+        title: "Status Updated",
+        description: `Report status changed to ${selectedStatus.label}.`
+      });
+      setIsStatusPopoverOpen(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: error.message || "Could not update status.",
+      });
+    }
+  };
+
+  const currentStatus = useMemo(() => {
+    return statuses?.find(s => s.label === report?.status);
+  }, [statuses, report]);
 
 
   if (loading) {
@@ -74,6 +124,8 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
   }
 
   const isConfidential = report.submissionType === 'confidential';
+  const isResolved = report.status === 'Resolved';
+
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -104,7 +156,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
           <Card>
             <CardHeader>
                 <CardTitle>Communication Channel</CardTitle>
-                <CardDescription>Communicate with the reporter. Your messages will appear with your name and role.</CardDescription>
+                <CardDescription>{isResolved ? 'This case is resolved. The chat is closed.' : 'Communicate with the reporter. Your messages will appear with your name and role.'}</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
@@ -141,9 +193,9 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
                     </div>
 
                     <div className="pt-4 space-y-3">
-                        <Textarea placeholder="Type your message to the reporter..." value={message} onChange={(e) => setMessage(e.target.value)} />
+                        <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message to the reporter..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved} />
                          <div className="flex justify-end">
-                            <Button size="sm" onClick={handleSendMessage} disabled={!message.trim()}>
+                            <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isResolved}>
                                 <Send className="mr-2 h-4 w-4"/>Send Message
                             </Button>
                         </div>
@@ -187,7 +239,40 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
             <CardContent className="space-y-4 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-2"><FileText className="h-4 w-4"/>Status</span>
-                <Badge variant="outline" className="capitalize">{report.status}</Badge>
+                 <Popover open={isStatusPopoverOpen} onOpenChange={setIsStatusPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={isStatusPopoverOpen}
+                      className="w-[200px] justify-between capitalize"
+                      style={currentStatus ? { backgroundColor: currentStatus.color, color: '#fff' } : {}}
+                    >
+                      {report.status}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search status..." />
+                      <CommandEmpty>No status found.</CommandEmpty>
+                      <CommandGroup>
+                        {statuses?.map((status) => (
+                          <CommandItem
+                            key={status.docId}
+                            value={status.label}
+                            onSelect={() => handleStatusChange(status.docId!)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }}></div>
+                              {status.label}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4"/>Submitted</span>
