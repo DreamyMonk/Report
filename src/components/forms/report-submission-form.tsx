@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,8 +21,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useCollection, useFirestore } from "@/firebase";
-import { Category } from "@/lib/types";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { Category, Report } from "@/lib/types";
+import { collection, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import { nanoid } from 'nanoid';
+
 
 function generateReportId() {
   const prefix = 'IB';
@@ -82,21 +84,22 @@ export function ReportSubmissionForm() {
     try {
         const reportId = generateReportId();
 
-        const reportData = {
+        const reportData: Omit<Report, 'docId'> = {
           id: reportId,
           title,
           content,
           category,
           submissionType,
           reporter: {
-            name: name || null,
-            email: email || null,
-            phone: phone || null,
+            name: name || undefined,
+            email: email || undefined,
+            phone: phone || undefined,
           },
-          submittedAt: serverTimestamp(),
+          submittedAt: serverTimestamp() as any, // Will be replaced by server
           status: 'New',
-          severity: 'Medium',
+          severity: 'Medium', // Default severity
           assignees: [],
+          // AI fields are omitted
         };
 
         const reportRef = await addDoc(collection(firestore, 'reports'), reportData);
@@ -107,7 +110,12 @@ export function ReportSubmissionForm() {
             action: 'submitted a new report',
             timestamp: serverTimestamp()
         });
-
+        
+        toast({
+            title: "Success",
+            description: "Your report has been submitted.",
+        });
+        
         setGeneratedId(reportId);
         setShowSuccessDialog(true);
         (event.target as HTMLFormElement).reset();
@@ -286,3 +294,5 @@ export function ReportSubmissionForm() {
     </>
   );
 }
+
+    
