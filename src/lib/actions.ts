@@ -1,31 +1,25 @@
 
 'use server';
-import 'dotenv/config';
 
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
-import { auth, db } from '@/firebase/server';
+import { getFirebaseAdmin } from '@/firebase/server';
 import { revalidatePath } from 'next/cache';
 
 export async function createAdminUser(prevState: any, formData: FormData) {
   try {
+    const { auth, db } = getFirebaseAdmin();
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const name = formData.get('name') as string;
 
-    if (!auth || !db) {
-        throw new Error('Firebase admin not initialized');
-    }
-
-    const userRecord = await getAuth().createUser({
+    const userRecord = await auth.createUser({
       email,
       password,
       displayName: name,
     });
 
-    await getAuth().setCustomUserClaims(userRecord.uid, { role: 'admin' });
+    await auth.setCustomUserClaims(userRecord.uid, { role: 'admin' });
 
-    await getFirestore().collection('users').doc(userRecord.uid).set({
+    await db.collection('users').doc(userRecord.uid).set({
       id: userRecord.uid,
       name: name,
       email: email,
@@ -46,6 +40,7 @@ export async function createAdminUser(prevState: any, formData: FormData) {
 
 export async function inviteUser(prevState: any, formData: FormData) {
     try {
+        const { auth, db } = getFirebaseAdmin();
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
         const name = formData.get('name') as string;
@@ -53,19 +48,15 @@ export async function inviteUser(prevState: any, formData: FormData) {
         const designation = formData.get('designation') as string | undefined;
         const department = formData.get('department') as string | undefined;
 
-        if (!auth || !db) {
-            throw new Error('Firebase admin not initialized');
-        }
-
-        const userRecord = await getAuth().createUser({
+        const userRecord = await auth.createUser({
             email,
             password,
             displayName: name,
         });
 
-        await getAuth().setCustomUserClaims(userRecord.uid, { role });
+        await auth.setCustomUserClaims(userRecord.uid, { role });
 
-        await getFirestore().collection('users').doc(userRecord.uid).set({
+        await db.collection('users').doc(userRecord.uid).set({
             id: userRecord.uid,
             name: name,
             email: email,
@@ -87,12 +78,9 @@ export async function inviteUser(prevState: any, formData: FormData) {
 
 export async function updatePassword(prevState: any, formData: FormData) {
     try {
+        const { auth, db } = getFirebaseAdmin();
         const password = formData.get('password') as string;
         const uid = formData.get('uid') as string;
-
-        if (!auth || !db) {
-            throw new Error('Firebase admin not initialized');
-        }
         
         if (password.length < 6) {
             throw new Error('Password must be at least 6 characters long.');
@@ -111,6 +99,7 @@ export async function updatePassword(prevState: any, formData: FormData) {
 
 
 export async function initializeData() {
+  const { db } = getFirebaseAdmin();
   if (!db) {
     console.error('Database not initialized, skipping data seeding.');
     return;
