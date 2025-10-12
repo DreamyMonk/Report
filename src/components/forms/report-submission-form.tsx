@@ -23,9 +23,6 @@ import {
 import { useCollection, useFirestore } from "@/firebase";
 import { Category } from "@/lib/types";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { classifyReportSeverity } from "@/ai/flows/classify-report-severity";
-import { summarizeReport } from "@/ai/flows/summarize-report-for-review";
-import { suggestInvestigationSteps } from "@/ai/flows/suggest-investigation-steps";
 
 function generateReportId() {
   const prefix = 'IB';
@@ -85,22 +82,6 @@ export function ReportSubmissionForm() {
     try {
         const reportId = generateReportId();
 
-        const [severityResult, summaryResult] = await Promise.all([
-            classifyReportSeverity({ reportText: content }),
-            summarizeReport({ reportText: content })
-        ]);
-
-        const stepsResult = await suggestInvestigationSteps({
-            reportContent: content,
-            riskLevel: severityResult.severityLevel as 'low' | 'medium' | 'high'
-        });
-
-        const severityMap = {
-            'low': 'Low',
-            'medium': 'Medium',
-            'high': 'High'
-        }
-
         const reportData = {
           id: reportId,
           title,
@@ -114,12 +95,8 @@ export function ReportSubmissionForm() {
           },
           submittedAt: serverTimestamp(),
           status: 'New',
-          severity: severityMap[severityResult.severityLevel] || 'Medium',
+          severity: 'Medium',
           assignees: [],
-          aiSummary: summaryResult.summary,
-          aiRiskAssessment: summaryResult.riskAssessment,
-          aiSuggestedSteps: stepsResult.suggestedSteps,
-          aiReasoning: severityResult.reasoning,
         };
 
         const reportRef = await addDoc(collection(firestore, 'reports'), reportData);
@@ -309,5 +286,3 @@ export function ReportSubmissionForm() {
     </>
   );
 }
-
-    
