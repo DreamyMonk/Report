@@ -1,8 +1,7 @@
 
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
-import { submitReport } from "@/lib/actions";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,32 +22,132 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useCollection, useFirestore } from "@/firebase";
 import { Category } from "@/lib/types";
-import { collection } from "firebase/firestore";
-import { useFormStatus } from "react-dom";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { classifyReportSeverity } from "@/ai/flows/classify-report-severity";
+import { summarizeReport } from "@/ai/flows/summarize-report-for-review";
+import { suggestInvestigationSteps } from "@/ai/flows/suggest-investigation-steps";
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending} className="w-full">
-      {pending ? <Loader2 className="animate-spin" /> : "Submit Securely"}
-    </Button>
-  );
+function generateReportId() {
+  const prefix = 'IB';
+  const timestamp = Date.now().toString(36).slice(-4);
+  const randomPart = Math.random().toString(36).substring(2, 8);
+  return `${prefix}-${timestamp}-${randomPart}`.toUpperCase();
 }
 
+
 export function ReportSubmissionForm() {
-  const initialState = { message: null, errors: {}, success: false, reportId: null };
-  const [state, dispatch] = useActionState(submitReport, initialState);
   const { toast } = useToast();
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [generatedId, setGeneratedId] = useState<string | null>(null);
   const firestore = useFirestore();
   const [submissionType, setSubmissionType] = useState('anonymous');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categoriesQuery = useMemo(() => {
     if (!firestore) return null;
     return collection(firestore, 'categories');
   }, [firestore]);
   const { data: categories } = useCollection<Category>(categoriesQuery);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    if (!firestore) {
+      toast({
+        variant: "destructive",
+        title: "Submission Failed",
+        description: "Database not connected. Please try again later.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const title = formData.get('title') as string;
+    const content = formData.get('content') as string;
+    const category = formData.get('category') as string;
+    const submissionType = formData.get('submissionType') as 'anonymous' | 'confidential';
+    const name = formData.get('name') as string | null;
+    const email = formData.get('email') as string | null;
+    const phone = formData.get('phone') as string | null;
+    
+    if (!title || !content || !category) {
+      toast({
+        variant: "destructive",
+        title: "Submission Failed",
+        description: "Please fill out all required fields.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+    
+    try {
+        const reportId = generateReportId();
+
+        const [severityResult, summaryResult] = await Promise.all([
+            classifyReportSeverity({ reportText: content }),
+            summarizeReport({ reportText: content })
+        ]);
+
+        const stepsResult = await suggestInvestigationSteps({
+            reportContent: content,
+            riskLevel: severityResult.severityLevel as 'low' | 'medium' | 'high'
+        });
+
+        const severityMap = {
+            'low': 'Low',
+            'medium': 'Medium',
+            'high': 'High'
+        }
+
+        const reportData = {
+          id: reportId,
+          title,
+          content,
+          category,
+          submissionType,
+          reporter: {
+            name: name || null,
+            email: email || null,
+            phone: phone || null,
+          },
+          submittedAt: serverTimestamp(),
+          status: 'New',
+          severity: severityMap[severityResult.severityLevel] || 'Medium',
+          assignees: [],
+          aiSummary: summaryResult.summary,
+          aiRiskAssessment: summaryResult.riskAssessment,
+          aiSuggestedSteps: stepsResult.suggestedSteps,
+          aiReasoning: severityResult.reasoning,
+        };
+
+        const reportRef = await addDoc(collection(firestore, 'reports'), reportData);
+
+        await addDoc(collection(firestore, 'audit_logs'), {
+            reportId: reportRef.id,
+            actor: { id: 'system', name: 'System' },
+            action: 'submitted a new report',
+            timestamp: serverTimestamp()
+        });
+
+        setGeneratedId(reportId);
+        setShowSuccessDialog(true);
+        (event.target as HTMLFormElement).reset();
+        setSubmissionType('anonymous');
+
+    } catch (e: any) {
+        console.error('Submission Error:', e);
+        toast({
+            variant: "destructive",
+            title: "Submission Failed",
+            description: e.message || 'An unexpected error occurred. Please try again later.',
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
 
    const copyToClipboard = () => {
     if (generatedId) {
@@ -75,29 +174,11 @@ export function ReportSubmissionForm() {
     }
   };
 
-  useEffect(() => {
-    if (state.success && state.message && state.reportId) {
-      setGeneratedId(state.reportId);
-      setShowSuccessDialog(true);
-      // Resets the form fields
-      const form = document.getElementById('report-submission-form') as HTMLFormElement;
-      if(form) form.reset();
-      setSubmissionType('anonymous');
-
-    } else if (!state.success && state.message) {
-       toast({
-        variant: "destructive",
-        title: "Submission Failed",
-        description: state.message,
-      });
-    }
-  }, [state, toast]);
-  
   return (
     <>
     <form
       id="report-submission-form"
-      action={dispatch}
+      onSubmit={handleSubmit}
       className="space-y-6"
     >
       <div className="space-y-3">
@@ -145,8 +226,8 @@ export function ReportSubmissionForm() {
                 <Input name="name" id="name" placeholder="Your Name" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email (Optional)</Label>
-                <Input name="email" id="email" placeholder="your.email@example.com" />
+                <Label htmlFor="email">Email</Label>
+                <Input name="email" id="email" type="email" placeholder="your.email@example.com" required/>
               </div>
             </div>
             <div className="space-y-2">
@@ -200,7 +281,9 @@ export function ReportSubmissionForm() {
           </div>
       </div>
 
-      <SubmitButton />
+      <Button type="submit" disabled={isSubmitting} className="w-full">
+        {isSubmitting ? <Loader2 className="animate-spin" /> : "Submit Securely"}
+      </Button>
     </form>
     <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
       <AlertDialogContent>
@@ -226,3 +309,5 @@ export function ReportSubmissionForm() {
     </>
   );
 }
+
+    
