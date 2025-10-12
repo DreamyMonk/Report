@@ -38,7 +38,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild>
                   <Link href="/dashboard">
                     <Home />
-                    <span className="break-words group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:hidden">Dashboard</span>
+                    <span className="group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:hidden">Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -46,7 +46,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild>
                   <Link href="/dashboard/reports">
                     <FileText />
-                    <span className="break-words group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:hidden">All Reports</span>
+                    <span className="group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:hidden">All Reports</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -54,7 +54,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild>
                   <Link href="/dashboard/users">
                     <Users />
-                    <span className="break-words group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:hidden">Users</span>
+                    <span className="group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:hidden">Users</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -62,7 +62,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild>
                   <Link href="/dashboard/audit-log">
                     <History />
-                    <span className="break-words group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:hidden">Audit Log</span>
+                    <span className="group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:hidden">Audit Log</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -70,7 +70,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild>
                   <Link href="/dashboard/settings">
                     <Settings />
-                    <span className="break-words group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:hidden">Settings</span>
+                    <span className="group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:hidden">Settings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -78,7 +78,7 @@ export default function DashboardLayout({
           </SidebarContent>
         </Sidebar>
         <div className={cn(
-          "flex flex-1 flex-col transition-[margin-left] duration-200 ease-linear md:ml-[--sidebar-width]",
+          "flex flex-1 flex-col transition-[margin-left] duration-300 ease-in-out md:ml-[--sidebar-width]",
           "group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:md:ml-[--sidebar-width-icon]"
         )}>
           <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
