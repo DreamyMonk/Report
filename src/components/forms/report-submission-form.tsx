@@ -137,7 +137,7 @@ export function ReportSubmissionForm() {
                 >
                   <FormItem>
                      <Label className="cursor-pointer">
-                      <Card className={`hover:bg-accent/50 transition-colors ${field.value === 'anonymous' ? 'ring-2 ring-primary' : ''}`}>
+                      <Card className={`hover:border-primary/50 transition-colors ${field.value === 'anonymous' ? 'ring-2 ring-primary border-primary' : 'border-border'}`}>
                           <CardContent className="p-4 flex items-center gap-4">
                               <RadioGroupItem value="anonymous" id="anonymous" />
                               <div className="space-y-1">
@@ -150,7 +150,7 @@ export function ReportSubmissionForm() {
                   </FormItem>
                   <FormItem>
                      <Label className="cursor-pointer">
-                        <Card className={`hover:bg-accent/50 transition-colors ${field.value === 'confidential' ? 'ring-2 ring-primary' : ''}`}>
+                        <Card className={`hover:border-primary/50 transition-colors ${field.value === 'confidential' ? 'ring-2 ring-primary border-primary' : 'border-border'}`}>
                           <CardContent className="p-4 flex items-center gap-4">
                               <RadioGroupItem value="confidential" id="confidential" />
                               <div className="space-y-1">

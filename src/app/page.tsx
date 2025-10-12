@@ -13,7 +13,7 @@ export default function Home() {
           <span className="font-headline text-xl font-bold">Integrity Beacon</span>
         </Link>
         <div className="flex items-center gap-2">
-           <Button asChild variant="outline">
+           <Button asChild>
               <Link href="/track">Track a Report</Link>
             </Button>
           <Button asChild variant="ghost">
