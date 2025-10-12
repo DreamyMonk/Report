@@ -28,7 +28,7 @@ export default function Home() {
         </Link>
         <div className="flex items-center gap-2">
            <Button asChild>
-              <Link href="/view-case">View Case</Link>
+              <Link href="/track">View Case</Link>
             </Button>
         </div>
       </header>

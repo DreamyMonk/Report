@@ -41,7 +41,7 @@ export default function TrackReportPage() {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        router.push(`/view-case/${reportId.toUpperCase()}`);
+        router.push(`/track/${reportId.toUpperCase()}`);
       } else {
         toast({
           variant: 'destructive',
