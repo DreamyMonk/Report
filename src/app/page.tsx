@@ -21,11 +21,6 @@ export default function Home() {
     }, [firestore]);
     const { data: content } = useDoc<AppContent>(contentRef);
 
-    useEffect(() => {
-        // Ensure default data like categories/statuses are present
-        initializeData();
-    }, []);
-
   return (
     <div className="flex min-h-screen flex-col">
       <header className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">

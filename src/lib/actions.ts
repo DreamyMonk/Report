@@ -89,14 +89,6 @@ export async function submitReport(
   prevState: State,
   formData: FormData
 ): Promise<State> {
-    if (!db) {
-     console.warn('Firestore is not available. Skipping report creation.');
-     return {
-      message: 'The server is not configured to handle submissions. Please contact support.',
-      success: false,
-    };
-  }
-
   const title = formData.get('title') as string;
   const content = formData.get('content') as string;
   const category = formData.get('category') as string;
@@ -104,6 +96,13 @@ export async function submitReport(
   const name = formData.get('name') as string | undefined;
   const email = formData.get('email') as string | undefined;
   const phone = formData.get('phone') as string | undefined;
+
+  if (!db) {
+    return {
+      message: 'The server is not configured to handle submissions. Please contact support.',
+      success: false,
+    };
+  }
   
   if (!title || !content || !category) {
     return {
@@ -129,7 +128,7 @@ export async function submitReport(
       submittedAt: serverTimestamp(),
       status: 'New',
       severity: 'Medium', // Default severity
-      assignees: null,
+      assignees: [],
     });
     
     // Add to audit log
@@ -243,6 +242,9 @@ export async function inviteUser(prevState: InviteUserState, formData: FormData)
 
 
 export async function createAdminUser(prevState: { message: string | null, success: boolean}, formData: FormData) {
+  // First, ensure default data is present
+  await initializeData();
+  
   const adminData = new FormData();
   adminData.append('email', formData.get('email') as string);
   adminData.append('password', formData.get('password') as string);
