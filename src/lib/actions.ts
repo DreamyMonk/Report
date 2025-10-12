@@ -19,6 +19,7 @@ const ReportSchema = z
     submissionType: z.enum(['anonymous', 'confidential']),
     name: z.string().optional(),
     email: z.string().optional(),
+    phone: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -57,6 +58,7 @@ type State = {
     submissionType?: string[];
     name?: string[];
     email?: string[];
+    phone?: string[];
   };
   message?: string | null;
   success: boolean;
@@ -125,6 +127,7 @@ export async function submitReport(
     submissionType: formData.get('submissionType'),
     name: formData.get('name'),
     email: formData.get('email'),
+    phone: formData.get('phone'),
   });
 
   if (!validatedFields.success) {
@@ -144,7 +147,7 @@ export async function submitReport(
   }
 
 
-  const { title, content, category, submissionType, name, email } =
+  const { title, content, category, submissionType, name, email, phone } =
     validatedFields.data;
 
   try {
@@ -169,6 +172,7 @@ export async function submitReport(
       reporter: {
         name: name || null,
         email: email || null,
+        phone: phone || null,
       },
       submittedAt: serverTimestamp(),
       status: 'New',

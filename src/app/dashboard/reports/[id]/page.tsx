@@ -1,10 +1,11 @@
+
 'use client'
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone } from "lucide-react";
 import { format } from "date-fns";
 import { useCollection, useDoc, useFirestore } from "@/firebase";
 import { Report, Message, User as AppUser, CaseStatus } from "@/lib/types";
@@ -292,6 +293,12 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground flex items-center gap-2"><User className="h-4 w-4"/>Reporter Email</span>
                   <span className="font-medium">{report.reporter.email}</span>
+                </div>
+              )}
+               {isConfidential && report.reporter?.phone && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4"/>Reporter Phone</span>
+                  <span className="font-medium">{report.reporter.phone}</span>
                 </div>
               )}
             </CardContent>

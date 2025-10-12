@@ -38,6 +38,7 @@ const ReportSchema = z.object({
   submissionType: z.enum(["anonymous", "confidential"]),
   name: z.string().optional(),
   email: z.string().optional(),
+  phone: z.string().optional(),
 }).refine(data => {
   if (data.submissionType === 'confidential') {
     return !!data.email && z.string().email().safeParse(data.email).success;
@@ -93,6 +94,7 @@ export function ReportSubmissionForm() {
       submissionType: "anonymous",
       name: "",
       email: "",
+      phone: "",
     },
   });
 
@@ -189,34 +191,49 @@ export function ReportSubmissionForm() {
         />
         
         {submissionType === 'confidential' && (
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Your Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email (Required)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="your.email@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
-                name="name"
+                name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name (Optional)</FormLabel>
+                    <FormLabel>Phone Number (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your Name" {...field} />
+                      <Input placeholder="Your Phone Number" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email (Required)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="your.email@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-           </div>
+          </div>
         )}
         
          {submissionType === 'anonymous' && (

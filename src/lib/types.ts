@@ -24,6 +24,7 @@ export type Report = {
   reporter?: {
     name?: string;
     email?: string;
+    phone?: string;
   };
   aiSummary?: string;
   aiRiskAssessment?: string;
