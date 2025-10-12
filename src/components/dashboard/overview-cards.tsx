@@ -1,12 +1,19 @@
-import { reports } from "@/lib/data";
+'use client';
+import { useCollection } from "@/firebase";
+import { Report } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, AlertCircle, Hourglass, CheckCircle } from "lucide-react";
+import { collection, query } from "firebase/firestore";
 
 export function OverviewCards() {
-  const totalReports = reports.length;
-  const newReports = reports.filter(r => r.status === "New").length;
-  const inProgress = reports.filter(r => r.status === "In Progress").length;
-  const resolved = reports.filter(r => r.status === "Resolved").length;
+  const { data: reports, firestore } = useCollection<Report>(
+    firestore ? query(collection(firestore, 'reports')) : null
+  );
+
+  const totalReports = reports?.length || 0;
+  const newReports = reports?.filter(r => r.status === "New").length || 0;
+  const inProgress = reports?.filter(r => r.status === "In Progress").length || 0;
+  const resolved = reports?.filter(r => r.status === "Resolved").length || 0;
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

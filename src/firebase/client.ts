@@ -1,12 +1,21 @@
 'use client';
-import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getApp, getApps, initializeApp, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Prevent re-initialization
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+} else {
+    app = getApp();
+}
+
+auth = getAuth(app);
+db = getFirestore(app);
 
 export { app, auth, db };

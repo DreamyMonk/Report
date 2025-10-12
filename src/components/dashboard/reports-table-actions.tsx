@@ -12,9 +12,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Report } from "@/lib/types";
 import Link from "next/link";
+import { useState } from "react";
+import { AssignCaseDialog } from "./assign-case-dialog";
 
 export function ReportTableActions({ report }: { report: Report }) {
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -25,14 +29,16 @@ export function ReportTableActions({ report }: { report: Report }) {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuItem asChild>
-          <Link href={`/dashboard/reports/${report.id}`}>View Details</Link>
+          <Link href={`/dashboard/reports/${report.docId}`}>View Details</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem>Assign Case</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setIsAssignDialogOpen(true)}>Assign Case</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
           Dismiss Report
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    <AssignCaseDialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} report={report} />
+    </>
   );
 }

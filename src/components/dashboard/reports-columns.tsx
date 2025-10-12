@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CaretSortIcon } from "@radix-ui/react-icons";
 import { ReportTableActions } from "./reports-table-actions";
 import { Shield, ShieldAlert, ShieldCheck } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 
 export const getColumns = (): ColumnDef<Report>[] => [
   {
@@ -72,8 +72,9 @@ export const getColumns = (): ColumnDef<Report>[] => [
       </Button>
     ),
     cell: ({ row }) => {
-      const date = parseISO(row.getValue("submittedAt"));
-      return <div>{format(date, "MMM d, yyyy")}</div>;
+      const date = row.getValue("submittedAt") as any;
+      if (!date) return 'N/A';
+      return <div>{format(date.toDate(), "MMM d, yyyy")}</div>;
     },
   },
   {

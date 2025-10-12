@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons/logo';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { reports } from '@/lib/data';
+import { collection, query, where, getDocs, getFirestore } from 'firebase/firestore';
+import { app } from '@/firebase/client';
+
 
 export default function TrackReportPage() {
   const [reportId, setReportId] = useState('');
@@ -17,15 +19,27 @@ export default function TrackReportPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleTrackReport = (e: React.FormEvent) => {
+  const handleTrackReport = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    
+    if (!reportId.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid ID',
+        description: 'Please enter a valid report ID.',
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const db = getFirestore(app);
+      const reportsRef = collection(db, 'reports');
+      const q = query(reportsRef, where('id', '==', reportId.toUpperCase()));
+      const querySnapshot = await getDocs(q);
 
-    // Simulate checking if report exists
-    setTimeout(() => {
-      const reportExists = reports.some(report => report.id === reportId.toUpperCase());
-
-      if (reportExists) {
+      if (!querySnapshot.empty) {
         router.push(`/track/${reportId.toUpperCase()}`);
       } else {
         toast({
@@ -34,8 +48,16 @@ export default function TrackReportPage() {
           description: 'Please check the ID and try again.',
         });
       }
+    } catch (error) {
+       toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not verify report ID. Please try again later.',
+        });
+       console.error(error)
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

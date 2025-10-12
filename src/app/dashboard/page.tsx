@@ -1,13 +1,21 @@
+'use client';
 import { OverviewCards } from "@/components/dashboard/overview-cards";
 import { ReportsTable } from "@/components/dashboard/reports-table";
-import { reports } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCollection } from "@/firebase";
+import { Report } from "@/lib/types";
+import { collection, query, where, orderBy, limit } from "firebase/firestore";
 
 export default function DashboardPage() {
-  const recentHighPriorityReports = reports
-    .filter(r => r.severity === 'High' && r.status === 'New')
-    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
-    .slice(0, 5);
+  const { data: reports, firestore } = useCollection<Report>(
+    firestore ? query(
+      collection(firestore, 'reports'),
+      where('severity', '==', 'High'),
+      where('status', '==', 'New'),
+      orderBy('submittedAt', 'desc'),
+      limit(5)
+    ) : null
+  );
 
   return (
     <div className="space-y-6">
@@ -20,7 +28,7 @@ export default function DashboardPage() {
             <CardDescription>Newly submitted reports marked with high severity.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ReportsTable reports={recentHighPriorityReports} />
+            <ReportsTable reports={reports || []} />
           </CardContent>
         </Card>
       </div>

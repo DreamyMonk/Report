@@ -1,4 +1,4 @@
-import { reports, users } from "@/lib/data";
+'use client'
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,11 +7,24 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, CheckCircle, Hourglass, XCircle, UserX, EyeOff, Lock } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock } from "lucide-react";
+import { format } from "date-fns";
+import { useDoc } from "@/firebase";
+import { Report } from "@/lib/types";
+import { doc } from "firebase/firestore";
+import { AssignCaseDialog } from "@/components/dashboard/assign-case-dialog";
+import { useState } from "react";
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
-  const report = reports.find((r) => r.id === params.id);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  
+  const { data: report, firestore, loading } = useDoc<Report>(
+    firestore ? doc(firestore, 'reports', params.id) : null
+  );
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
 
   if (!report) {
     notFound();
@@ -23,7 +36,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <Badge variant={report.severity === 'High' ? 'destructive' : 'secondary'} className="capitalize">{report.severity} Severity</Badge>
+          <Badge variant={report.severity === 'High' ? 'destructive' : report.severity === 'Medium' ? 'secondary' : 'default'} className="capitalize">{report.severity} Severity</Badge>
            <Badge variant="outline" className="capitalize flex items-center gap-1">
               {isConfidential ? <Lock className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
               {report.submissionType}
@@ -101,7 +114,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4"/>Submitted</span>
-                <span>{format(parseISO(report.submittedAt), "PPP")}</span>
+                <span>{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-2"><Tag className="h-4 w-4"/>Category</span>
@@ -140,13 +153,14 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
               ) : (
                 <div className="text-sm text-muted-foreground">Unassigned</div>
               )}
-              <Button variant="outline" className="w-full mt-4">
+              <Button variant="outline" className="w-full mt-4" onClick={() => setIsAssignDialogOpen(true)}>
                 {report.assignee ? "Change Assignee" : "Assign Case"}
               </Button>
             </CardContent>
           </Card>
         </div>
       </div>
+      <AssignCaseDialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} report={report} />
     </div>
   );
 }

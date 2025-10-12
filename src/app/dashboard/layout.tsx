@@ -10,10 +10,11 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Logo } from "@/components/icons/logo";
-import { Home, FileText, Settings, Search } from "lucide-react";
+import { Home, FileText, Settings, Search, Users } from "lucide-react";
 import { UserNav } from "@/components/layout/user-nav";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { FirebaseErrorListener } from "@/components/firebase-error-listener";
 
 export default function DashboardLayout({
   children,
@@ -48,6 +49,14 @@ export default function DashboardLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+               <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/users">
+                    <Users />
+                    <span>Users</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link href="/dashboard/settings">
@@ -73,6 +82,7 @@ export default function DashboardLayout({
           <main className="flex-1 p-4 sm:p-6">{children}</main>
         </SidebarInset>
       </div>
+      <FirebaseErrorListener />
     </SidebarProvider>
   );
 }
