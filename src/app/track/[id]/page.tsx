@@ -159,7 +159,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                               <div className="space-y-4 h-64 overflow-y-auto pr-4 border rounded-md p-4 bg-background">
+                               <div className="h-64 overflow-y-auto pr-4 space-y-4 border rounded-md p-4 bg-background">
                                 {messagesLoading && <p>Loading messages...</p>}
                                 {messages?.map((msg) => (
                                     msg.sender === 'reporter' ? (

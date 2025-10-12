@@ -180,7 +180,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                   <div className="space-y-4 h-64 overflow-y-auto pr-4 border rounded-md p-4 bg-secondary/50">
+                   <div className="h-64 overflow-y-auto pr-4 space-y-4 border rounded-md p-4 bg-secondary/50">
                     {messagesLoading && <p>Loading messages...</p>}
                     {messages?.map((msg) => (
                         msg.sender === 'officer' ? (
