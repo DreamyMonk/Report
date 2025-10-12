@@ -27,7 +27,7 @@ export async function createAdminUser(prevState: any, formData: FormData) {
 
     await getFirestore().collection('users').doc(userRecord.uid).set({
       id: userRecord.uid,
-      name: name, // This line ensures the name is saved
+      name: name,
       email: email,
       role: 'admin',
       avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,

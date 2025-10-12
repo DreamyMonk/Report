@@ -2,7 +2,6 @@
 import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getAuth, Auth } from 'firebase-admin/auth';
-import 'dotenv/config';
 
 let app: App;
 let auth: Auth | null = null;
