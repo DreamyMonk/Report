@@ -46,9 +46,9 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
   const { data: messages, loading: messagesLoading } = useCollection<Message>(messagesQuery);
 
   const handleSendMessage = () => {
-    if (!message.trim() || !firestore || !report) return;
+    if (!message.trim() || !firestore || !report?.docId) return;
 
-    const messagesCollection = collection(firestore, 'reports', report.docId!, 'messages');
+    const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
     const messageData = {
       content: message,
       sentAt: serverTimestamp(),
@@ -56,12 +56,6 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     };
 
     addDoc(messagesCollection, messageData)
-      .then(() => {
-        setMessage('');
-        toast({
-          title: "Message sent!",
-        });
-      })
       .catch((serverError) => {
         const permissionError = new FirestorePermissionError({
           path: messagesCollection.path,
@@ -69,12 +63,12 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
           requestResourceData: messageData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to send message.'
-        });
       });
+      
+    setMessage('');
+    toast({
+      title: "Message sent!",
+    });
   };
 
   if (reportsLoading) {
@@ -264,3 +258,5 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     </div>
   );
 }
+
+    

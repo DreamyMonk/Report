@@ -53,27 +53,21 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
   const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
 
   const handleSendMessage = () => {
-    if (!message.trim() || !firestore || !report || !userData) return;
+    if (!message.trim() || !firestore || !report?.docId || !userData) return;
 
-    const messagesCollection = collection(firestore, 'reports', report.docId!, 'messages');
+    const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
     const messageData = {
       content: message,
       sentAt: serverTimestamp(),
       sender: 'officer' as const,
       senderInfo: {
         id: userData.id,
-        name: userData.name,
+        name: userData.name || userData.email,
         avatarUrl: userData.avatarUrl,
       },
     };
     
     addDoc(messagesCollection, messageData)
-      .then(() => {
-        setMessage('');
-        toast({
-          title: "Message sent!",
-        });
-      })
       .catch((serverError) => {
         const permissionError = new FirestorePermissionError({
           path: messagesCollection.path,
@@ -81,12 +75,12 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
           requestResourceData: messageData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to send message.'
-        });
       });
+    
+    setMessage('');
+    toast({
+      title: "Message sent!",
+    });
   };
   
   const handleStatusChange = async (statusId: string) => {
@@ -315,9 +309,9 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
                                 <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
                                 <AvatarFallback>{assignee.name ? assignee.name.split(' ').map(n => n[0]).join('') : (assignee.email ? assignee.email.charAt(0).toUpperCase() : 'U')}</AvatarFallback>
                             </Avatar>
-                            <div>
+                            <div className="flex-1">
                                 <p className="text-sm font-medium leading-none">{assignee.name || assignee.email}</p>
-                                {assignee.name && assignee.email && <p className="text-sm text-muted-foreground">{assignee.email}</p>}
+                                {assignee.name && assignee.email && <p className="text-sm text-muted-foreground break-all">{assignee.email}</p>}
                             </div>
                         </div>
                     ))}
@@ -352,3 +346,5 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
     </div>
   );
 }
+
+    
