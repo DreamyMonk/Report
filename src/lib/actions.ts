@@ -2,9 +2,6 @@
 'use server';
 
 import { z } from 'zod';
-import { classifyReportSeverity } from '@/ai/flows/classify-report-severity';
-import { summarizeReport } from '@/ai/flows/summarize-report-for-review';
-import { suggestInvestigationSteps } from '@/ai/flows/suggest-investigation-steps';
 import { revalidatePath } from 'next/cache';
 import { serverTimestamp } from 'firebase-admin/firestore';
 import { db, auth } from '@/firebase/server';
@@ -108,16 +105,6 @@ export async function submitReport(
   const phone = formData.get('phone') as string | undefined;
 
   try {
-    const [severityResult, summaryResult] = await Promise.all([
-      classifyReportSeverity({ reportText: content }),
-      summarizeReport({ reportText: content }),
-    ]);
-
-    const stepsResult = await suggestInvestigationSteps({
-      reportContent: content,
-      riskLevel: severityResult.severityLevel,
-    });
-    
     const reportId = generateReportId();
 
     const reportRef = await db.collection('reports').add({
@@ -133,11 +120,11 @@ export async function submitReport(
       },
       submittedAt: serverTimestamp(),
       status: 'New',
-      severity: severityResult.severityLevel,
-      aiSummary: summaryResult.summary,
-      aiRiskAssessment: summaryResult.riskAssessment,
-      aiSuggestedSteps: stepsResult.suggestedSteps,
-      aiReasoning: severityResult.reasoning,
+      severity: 'Medium', // Default severity
+      aiSummary: '',
+      aiRiskAssessment: '',
+      aiSuggestedSteps: [],
+      aiReasoning: '',
       assignees: null,
     });
     
