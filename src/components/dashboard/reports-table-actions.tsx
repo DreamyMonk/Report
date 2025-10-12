@@ -42,7 +42,12 @@ export function ReportTableActions({ report }: { report: Report }) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-    <AssignCaseDialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} report={report} />
+    <AssignCaseDialog 
+      open={isAssignDialogOpen} 
+      onOpenChange={setIsAssignDialogOpen} 
+      report={report}
+      mode="assign"
+    />
     </>
   );
 }

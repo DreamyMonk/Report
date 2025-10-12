@@ -19,12 +19,10 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { ShareReportDialog } from "@/components/dashboard/share-report-dialog";
-import { TransferCaseDialog } from "@/components/dashboard/transfer-case-dialog";
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
-  const [transferMode, setTransferMode] = useState<'transfer' | 'add'>('transfer');
+  const [assignMode, setAssignMode] = useState<'assign' | 'transfer' | 'add'>('assign');
   const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [message, setMessage] = useState('');
@@ -116,9 +114,9 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
     }
   };
 
-  const openTransferDialog = (mode: 'transfer' | 'add') => {
-    setTransferMode(mode);
-    setIsTransferDialogOpen(true);
+  const openAssignDialog = (mode: 'assign' | 'transfer' | 'add') => {
+    setAssignMode(mode);
+    setIsAssignDialogOpen(true);
   }
 
   const currentStatus = useMemo(() => {
@@ -313,10 +311,10 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
                         </div>
                     ))}
                     <div className="flex gap-2 pt-4">
-                        <Button variant="outline" className="w-full" onClick={() => openTransferDialog('transfer')}>
+                        <Button variant="outline" className="w-full" onClick={() => openAssignDialog('transfer')}>
                             <Replace className="mr-2 h-4 w-4" /> Transfer Case
                         </Button>
-                        <Button variant="outline" className="w-full" onClick={() => openTransferDialog('add')}>
+                        <Button variant="outline" className="w-full" onClick={() => openAssignDialog('add')}>
                             <UserPlus className="mr-2 h-4 w-4" /> Add Assignee
                         </Button>
                     </div>
@@ -324,7 +322,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
               ) : (
                 <>
                     <div className="text-sm text-muted-foreground text-center py-4">Unassigned</div>
-                    <Button variant="outline" className="w-full mt-4" onClick={() => setIsAssignDialogOpen(true)}>
+                    <Button variant="outline" className="w-full mt-4" onClick={() => openAssignDialog('assign')}>
                         Assign Case
                     </Button>
                 </>
@@ -333,12 +331,11 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
           </Card>
         </div>
       </div>
-      <AssignCaseDialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} report={report} />
-      <TransferCaseDialog 
-        open={isTransferDialogOpen} 
-        onOpenChange={setIsTransferDialogOpen} 
+      <AssignCaseDialog 
+        open={isAssignDialogOpen} 
+        onOpenChange={setIsAssignDialogOpen} 
         report={report} 
-        mode={transferMode}
+        mode={assignMode}
       />
       <ShareReportDialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} reportId={report.docId!} />
     </div>
