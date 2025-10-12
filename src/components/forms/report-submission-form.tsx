@@ -2,8 +2,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { useFormStatus } from "react-dom";
-import { useForm } from "react-hook-form";
+import { useForm, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { submitReport } from "@/lib/actions";
@@ -29,10 +28,11 @@ import {
 import { useCollection, useFirestore } from "@/firebase";
 import { Category } from "@/lib/types";
 import { collection } from "firebase/firestore";
+import { useFormStatus } from "react-dom";
 
 const ReportSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
-  category: z.string({ required_error: "Please select a category." }),
+  category: z.string({ required_error: "Please select a category." }).min(1, "Please select a category."),
   content: z.string().min(20, "Description must be at least 20 characters long."),
   submissionType: z.enum(["anonymous", "confidential"]),
   name: z.string().optional(),
@@ -60,14 +60,6 @@ const ReportSchema = z.object({
 
 type ReportFormValues = z.infer<typeof ReportSchema>;
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending} className="w-full">
-      {pending ? <Loader2 className="animate-spin" /> : "Submit Securely"}
-    </Button>
-  );
-}
 
 export function ReportSubmissionForm() {
   const initialState = { message: null, errors: {}, success: false, reportId: null };
@@ -86,6 +78,7 @@ export function ReportSubmissionForm() {
 
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(ReportSchema),
+    mode: 'onChange',
     defaultValues: {
       title: "",
       category: undefined,
@@ -132,6 +125,16 @@ export function ReportSubmissionForm() {
         }
     });
     dispatch(formData);
+  }
+  
+  function SubmitButton() {
+    const { pending } = useFormStatus();
+    const { formState } = useFormContext();
+    return (
+      <Button type="submit" disabled={!formState.isDirty || !formState.isValid || pending} className="w-full">
+        {pending ? <Loader2 className="animate-spin" /> : "Submit Securely"}
+      </Button>
+    );
   }
 
   return (

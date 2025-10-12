@@ -8,9 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AppContent } from '@/lib/types';
 import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
+import { initializeData } from '@/lib/actions';
 
 export default function Home() {
     const firestore = useFirestore();
@@ -19,6 +20,11 @@ export default function Home() {
         return doc(firestore, 'content', 'siteCopy');
     }, [firestore]);
     const { data: content } = useDoc<AppContent>(contentRef);
+
+    useEffect(() => {
+        // Ensure default data like categories/statuses are present
+        initializeData();
+    }, []);
 
   return (
     <div className="flex min-h-screen flex-col">

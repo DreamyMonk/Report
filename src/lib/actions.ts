@@ -12,7 +12,7 @@ import { db, auth } from '@/firebase/server';
 const ReportSchema = z
   .object({
     title: z.string().min(5, 'Title must be at least 5 characters long.'),
-    category: z.string({ required_error: 'Please select a category.' }),
+    category: z.string({ required_error: 'Please select a category.' }).min(1, 'Please select a category.'),
     content: z
       .string()
       .min(20, 'Description must be at least 20 characters long.'),
@@ -68,7 +68,7 @@ function generateReportId() {
   return `${prefix}-${timestamp}-${randomPart}`.toUpperCase();
 }
 
-async function initializeDefaultData() {
+export async function initializeData() {
   if (!db) return;
   
   const statusesRef = db.collection('statuses');
@@ -128,8 +128,6 @@ export async function submitReport(
   prevState: State,
   formData: FormData
 ): Promise<State> {
-  await initializeDefaultData();
-
   const validatedFields = ReportSchema.safeParse({
     title: formData.get('title'),
     category: formData.get('category'),
