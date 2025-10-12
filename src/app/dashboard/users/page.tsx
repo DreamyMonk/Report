@@ -8,18 +8,40 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { Edit, PlusCircle, Trash2 } from "lucide-react";
 import { InviteUserDialog } from "@/components/dashboard/invite-user-dialog";
+import { useAuth } from "@/firebase/auth-provider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DotsVerticalIcon } from "@radix-ui/react-icons";
+import { RemoveUserDialog } from "@/components/dashboard/remove-user-dialog";
 
 export default function UsersPage() {
   const firestore = useFirestore();
+  const { user: currentUser } = useAuth();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
+  const [userToRemove, setUserToRemove] = useState<User | null>(null);
 
   const usersQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'));
   }, [firestore]);
   const { data: users } = useCollection<User>(usersQuery);
+
+  const handleEdit = (user: User) => {
+    setUserToEdit(user);
+    setIsInviteDialogOpen(true);
+  };
+  
+  const handleCloseDialog = () => {
+    setUserToEdit(null);
+    setIsInviteDialogOpen(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -37,7 +59,7 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {users?.map(user => (
-            <Card key={user.docId}>
+            <Card key={user.docId} className="relative">
                 <CardContent className="p-4 flex items-center gap-4">
                      <Avatar className="h-12 w-12">
                         <AvatarImage src={user.avatarUrl} alt={user.name} />
@@ -51,12 +73,46 @@ export default function UsersPage() {
                         </div>
                         {user.designation && <p className="text-xs text-muted-foreground">{user.designation}, {user.department}</p>}
                     </div>
+                     <div className="absolute top-2 right-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <DotsVerticalIcon />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEdit(user)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                    onClick={() => setUserToRemove(user)}
+                                    disabled={currentUser?.uid === user.id}
+                                    className="text-destructive focus:text-destructive"
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Remove
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </CardContent>
             </Card>
           ))}
         </CardContent>
       </Card>
-      <InviteUserDialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen} />
+      <InviteUserDialog 
+        open={isInviteDialogOpen} 
+        onOpenChange={handleCloseDialog}
+        userToEdit={userToEdit}
+      />
+      {userToRemove && (
+        <RemoveUserDialog
+          open={!!userToRemove}
+          onOpenChange={() => setUserToRemove(null)}
+          user={userToRemove}
+        />
+      )}
     </div>
   )
 }

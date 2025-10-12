@@ -30,7 +30,6 @@ export async function createAdminUser(prevState: any, formData: FormData) {
       requiresPasswordChange: false,
     });
     
-    // Seed initial data
     await initializeData(db);
 
     return { message: `Admin user ${email} created successfully. You can now log in.`, success: true };
@@ -42,40 +41,76 @@ export async function createAdminUser(prevState: any, formData: FormData) {
 export async function inviteUser(prevState: any, formData: FormData) {
     try {
         const { auth, db } = getFirebaseAdmin();
+        const userId = formData.get('userId') as string | null;
         const email = formData.get('email') as string;
-        const password = formData.get('password') as string;
         const name = formData.get('name') as string;
         const role = formData.get('role') as string;
         const designation = formData.get('designation') as string | undefined;
         const department = formData.get('department') as string | undefined;
 
-        const userRecord = await auth.createUser({
-            email,
-            password,
-            displayName: name,
-        });
+        if (userId) {
+            // Edit existing user
+            await auth.updateUser(userId, {
+                displayName: name,
+            });
+            await auth.setCustomUserClaims(userId, { role });
+            await db.collection('users').doc(userId).update({
+                name,
+                role,
+                designation: designation || null,
+                department: department || null,
+            });
+            revalidatePath('/dashboard/users');
+            return { message: `User ${email} has been updated.`, success: true };
 
-        await auth.setCustomUserClaims(userRecord.uid, { role });
+        } else {
+            // Create new user
+            const password = formData.get('password') as string;
+            const userRecord = await auth.createUser({
+                email,
+                password,
+                displayName: name,
+            });
 
-        await db.collection('users').doc(userRecord.uid).set({
-            id: userRecord.uid,
-            name: name,
-            email: email,
-            role: role,
-            designation: designation || null,
-            department: department || null,
-            avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
-            createdAt: new Date(),
-            requiresPasswordChange: true,
-        });
-        
-        revalidatePath('/dashboard/users');
-        return { message: `User ${email} has been invited as a ${role}.`, success: true };
+            await auth.setCustomUserClaims(userRecord.uid, { role });
+
+            await db.collection('users').doc(userRecord.uid).set({
+                id: userRecord.uid,
+                name: name,
+                email: email,
+                role: role,
+                designation: designation || null,
+                department: department || null,
+                avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
+                createdAt: new Date(),
+                requiresPasswordChange: true,
+            });
+            
+            revalidatePath('/dashboard/users');
+            return { message: `User ${email} has been invited as a ${role}.`, success: true };
+        }
+
 
     } catch (error: any) {
-        return { message: error.message || 'Failed to invite user.', success: false };
+        return { message: error.message || 'Failed to process user.', success: false };
     }
 }
+
+export async function deleteUser(prevState: any, formData: FormData) {
+    try {
+        const { auth, db } = getFirebaseAdmin();
+        const userId = formData.get('userId') as string;
+
+        await auth.deleteUser(userId);
+        await db.collection('users').doc(userId).delete();
+
+        revalidatePath('/dashboard/users');
+        return { message: 'User has been successfully removed.', success: true };
+    } catch (error: any) {
+        return { message: error.message || 'Failed to remove user.', success: false };
+    }
+}
+
 
 export async function updatePassword(prevState: any, formData: FormData) {
     try {
