@@ -69,7 +69,7 @@ export default function TrackReportPage() {
             <span className="font-headline text-2xl font-bold">Integrity Beacon</span>
           </Link>
           <h1 className="text-2xl font-bold">Track Your Report</h1>
-          <p className="text-muted-foreground">Enter the unique ID you received upon submission.</p>
+          <p className="text-muted-foreground text-center">Enter the unique ID you received upon submission.</p>
         </div>
         <form onSubmit={handleTrackReport}>
           <Card>
