@@ -6,6 +6,9 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { serverTimestamp } from 'firebase-admin/firestore';
 import { db, auth } from '@/firebase/server';
+import { classifyReportSeverity } from '@/ai/flows/classify-report-severity';
+import { summarizeReport } from '@/ai/flows/summarize-report-for-review';
+import { suggestInvestigationSteps } from '@/ai/flows/suggest-investigation-steps';
 
 type State = {
   errors?: {
@@ -114,6 +117,22 @@ export async function submitReport(
   try {
     const reportId = generateReportId();
 
+    const [severityResult, summaryResult] = await Promise.all([
+        classifyReportSeverity({ reportText: content }),
+        summarizeReport({ reportText: content })
+    ]);
+
+    const stepsResult = await suggestInvestigationSteps({
+        reportContent: content,
+        riskLevel: severityResult.severityLevel as 'low' | 'medium' | 'high'
+    });
+
+    const severityMap = {
+        'low': 'Low',
+        'medium': 'Medium',
+        'high': 'High'
+    }
+
     const reportRef = await db.collection('reports').add({
       id: reportId,
       title,
@@ -127,8 +146,12 @@ export async function submitReport(
       },
       submittedAt: serverTimestamp(),
       status: 'New',
-      severity: 'Medium', // Default severity
+      severity: severityMap[severityResult.severityLevel] || 'Medium',
       assignees: [],
+      aiSummary: summaryResult.summary,
+      aiRiskAssessment: summaryResult.riskAssessment,
+      aiSuggestedSteps: stepsResult.suggestedSteps,
+      aiReasoning: severityResult.reasoning,
     });
     
     // Add to audit log
