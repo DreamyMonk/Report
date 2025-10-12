@@ -1,3 +1,4 @@
+
 "use client";
 
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
@@ -17,6 +18,9 @@ import { AssignCaseDialog } from "./assign-case-dialog";
 
 export function ReportTableActions({ report }: { report: Report }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  
+  const hasAssignees = report.assignees && report.assignees.length > 0;
+
   return (
     <>
     <DropdownMenu>
@@ -31,7 +35,7 @@ export function ReportTableActions({ report }: { report: Report }) {
         <DropdownMenuItem asChild>
           <Link href={`/dashboard/reports/${report.docId}`}>View Details</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setIsAssignDialogOpen(true)}>Assign Case</DropdownMenuItem>
+        {!hasAssignees && <DropdownMenuItem onClick={() => setIsAssignDialogOpen(true)}>Assign Case</DropdownMenuItem>}
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
           Dismiss Report

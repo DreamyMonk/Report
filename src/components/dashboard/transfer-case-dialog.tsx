@@ -22,15 +22,17 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 
-interface AssignCaseDialogProps {
+interface TransferCaseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   report: Report;
+  mode: 'transfer' | 'add';
 }
 
-export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialogProps) {
+export function TransferCaseDialog({ open, onOpenChange, report, mode }: TransferCaseDialogProps) {
   const firestore = useFirestore();
   const { user, userData } = useAuth();
+  
   const usersQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'), where('role', 'in', ['admin', 'officer']));
@@ -41,16 +43,35 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    setSelectedUserIds([]);
-  }, [open]);
+  const dialogTitle = mode === 'transfer' ? 'Transfer Case' : 'Add Assignee';
+  const dialogDescription = mode === 'transfer' 
+    ? "Select new case officers. The previous assignees will be replaced." 
+    : "Select additional case officers to add to this report.";
+  const buttonText = mode === 'transfer' ? 'Transfer Case' : 'Add Assignee';
 
-  const handleAssignCase = async () => {
+  useEffect(() => {
+    if (open) {
+      if (mode === 'transfer') {
+        setSelectedUserIds([]);
+      } else {
+        setSelectedUserIds(report.assignees?.map(a => a.id) || []);
+      }
+    }
+  }, [report, open, mode]);
+
+  const availableUsers = useMemo(() => {
+    if (!users || mode !== 'add') return users;
+    const currentAssigneeIds = report.assignees?.map(a => a.id) || [];
+    return users.filter(u => !currentAssigneeIds.includes(u.id));
+  }, [users, report, mode]);
+
+
+  const handleUpdateAssignees = async () => {
     if (!firestore || !report.docId || !user || !userData) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Could not assign case. Missing required information.",
+        description: "Could not update assignees. Missing required information.",
       });
       return;
     }
@@ -70,10 +91,10 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
           designation: u.designation,
           department: u.department,
         })),
-        status: 'In Progress'
       });
 
       const assigneeNames = selectedUsers.map(u => u.name).join(', ');
+      const actionText = mode === 'transfer' ? `transferred the case to ${assigneeNames}` : `added ${assigneeNames} to the case`;
 
       await addDoc(collection(firestore, 'audit_logs'), {
         reportId: report.docId,
@@ -81,19 +102,19 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
           id: user.uid,
           name: userData.name || user.displayName || 'System'
         },
-        action: `assigned the case to ${assigneeNames}`,
+        action: actionText,
         timestamp: serverTimestamp()
       });
       
       toast({
-        title: "Case Assigned",
-        description: `Report has been assigned to ${assigneeNames}.`,
+        title: "Case Updated",
+        description: `Case assignees have been updated.`,
       });
       onOpenChange(false);
     } catch (error: any) {
        toast({
         variant: "destructive",
-        title: "Assignment Failed",
+        title: "Update Failed",
         description: error.message || "An unexpected error occurred.",
       });
     } finally {
@@ -111,10 +132,8 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Assign Case</DialogTitle>
-          <DialogDescription>
-            Select one or more case officers to investigate this report. The status will be changed to 'In Progress'.
-          </DialogDescription>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
         
         <Command>
@@ -122,7 +141,7 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
             <CommandList>
                 <CommandEmpty>No users found.</CommandEmpty>
                 <CommandGroup>
-                    {users?.map(user => {
+                    {availableUsers?.map(user => {
                         const isSelected = selectedUserIds.includes(user.id);
                         return (
                             <CommandItem
@@ -158,8 +177,8 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleAssignCase} disabled={isLoading || selectedUserIds.length === 0}>
-            {isLoading ? "Assigning..." : "Assign Case"}
+          <Button onClick={handleUpdateAssignees} disabled={isLoading || selectedUserIds.length === 0}>
+            {isLoading ? "Updating..." : buttonText}
           </Button>
         </DialogFooter>
       </DialogContent>

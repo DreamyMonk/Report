@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace } from "lucide-react";
 import { format } from "date-fns";
 import { useCollection, useDoc, useFirestore } from "@/firebase";
 import { Report, Message, User as AppUser, CaseStatus } from "@/lib/types";
@@ -19,9 +19,12 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { ShareReportDialog } from "@/components/dashboard/share-report-dialog";
+import { TransferCaseDialog } from "@/components/dashboard/transfer-case-dialog";
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const [transferMode, setTransferMode] = useState<'transfer' | 'add'>('transfer');
   const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [message, setMessage] = useState('');
@@ -112,6 +115,11 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
       });
     }
   };
+
+  const openTransferDialog = (mode: 'transfer' | 'add') => {
+    setTransferMode(mode);
+    setIsTransferDialogOpen(true);
+  }
 
   const currentStatus = useMemo(() => {
     return statuses?.find(s => s.label === report?.status);
@@ -304,21 +312,35 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
                             </div>
                         </div>
                     ))}
+                    <div className="flex gap-2 pt-4">
+                        <Button variant="outline" className="w-full" onClick={() => openTransferDialog('transfer')}>
+                            <Replace className="mr-2 h-4 w-4" /> Transfer Case
+                        </Button>
+                        <Button variant="outline" className="w-full" onClick={() => openTransferDialog('add')}>
+                            <UserPlus className="mr-2 h-4 w-4" /> Add Assignee
+                        </Button>
+                    </div>
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground">Unassigned</div>
+                <>
+                    <div className="text-sm text-muted-foreground text-center py-4">Unassigned</div>
+                    <Button variant="outline" className="w-full mt-4" onClick={() => setIsAssignDialogOpen(true)}>
+                        Assign Case
+                    </Button>
+                </>
               )}
-              <Button variant="outline" className="w-full mt-4" onClick={() => setIsAssignDialogOpen(true)}>
-                {report.assignees && report.assignees.length > 0 ? "Change Assignees" : "Assign Case"}
-              </Button>
             </CardContent>
           </Card>
         </div>
       </div>
       <AssignCaseDialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} report={report} />
+      <TransferCaseDialog 
+        open={isTransferDialogOpen} 
+        onOpenChange={setIsTransferDialogOpen} 
+        report={report} 
+        mode={transferMode}
+      />
       <ShareReportDialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} reportId={report.docId!} />
     </div>
   );
 }
-
-    
