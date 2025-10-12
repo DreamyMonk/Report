@@ -78,7 +78,8 @@ export default function DashboardLayout({
           </SidebarContent>
         </Sidebar>
         <div className={cn(
-          "flex flex-1 flex-col transition-[margin-left] duration-200 ease-linear md:ml-[--sidebar-width] group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:md:ml-[--sidebar-width-icon]"
+          "flex flex-1 flex-col transition-[margin-left] duration-200 ease-linear md:ml-[--sidebar-width]",
+          "group-data-[[data-state=collapsed][data-collapsible=icon]]/sidebar-wrapper:md:ml-[--sidebar-width-icon]"
         )}>
           <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <div className="flex items-center gap-2">
