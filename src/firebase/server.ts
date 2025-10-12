@@ -3,6 +3,7 @@
 import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getAuth, Auth } from 'firebase-admin/auth';
+import serviceAccount from '../../firebase-service-account-key.json';
 
 let app: App;
 let auth: Auth;
@@ -15,16 +16,8 @@ function getFirebaseAdmin() {
     db = getFirestore(app);
     return { app, auth, db };
   }
-
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-  if (!serviceAccountKey) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set in your .env file. Server-side Firebase features cannot be initialized. Please add it to your .env file and restart the server.');
-  }
   
   try {
-    const serviceAccount = JSON.parse(serviceAccountKey);
-    
     app = initializeApp({
       credential: cert(serviceAccount),
     });
@@ -34,7 +27,7 @@ function getFirebaseAdmin() {
 
     return { app, auth, db };
   } catch (error: any) {
-    throw new Error(`Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Please ensure it is a valid JSON string. Original error: ${error.message}`);
+    throw new Error(`Failed to initialize Firebase Admin SDK. Original error: ${error.message}`);
   }
 }
 
