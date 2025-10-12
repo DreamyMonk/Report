@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useActionState, useEffect } from "react";
+import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,23 +25,54 @@ import { useCollection, useFirestore } from "@/firebase";
 import { Category, Report } from "@/lib/types";
 import { collection, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
 import { nanoid } from 'nanoid';
+import { submitReport } from "@/lib/actions";
 
+const initialState = {
+  message: null,
+  success: false,
+  reportId: null,
+};
 
-function generateReportId() {
-  const prefix = 'IB';
-  const timestamp = Date.now().toString(36).slice(-4);
-  const randomPart = Math.random().toString(36).substring(2, 8);
-  return `${prefix}-${timestamp}-${randomPart}`.toUpperCase();
+function SubmitButton() {
+    const { pending } = useFormStatus();
+    return (
+        <Button type="submit" disabled={pending} className="w-full">
+            {pending ? <Loader2 className="animate-spin" /> : "Submit Securely"}
+        </Button>
+    )
 }
-
 
 export function ReportSubmissionForm() {
   const { toast } = useToast();
+  const [state, dispatch] = useActionState(submitReport, initialState);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [generatedId, setGeneratedId] = useState<string | null>(null);
   const firestore = useFirestore();
   const [submissionType, setSubmissionType] = useState('anonymous');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  useEffect(() => {
+    if (state.message) {
+      if (state.success) {
+        toast({
+          title: "Success",
+          description: state.message,
+        });
+        setGeneratedId(state.reportId);
+        setShowSuccessDialog(true);
+        // Reset form state if needed, though useActionState helps manage this
+        const form = document.getElementById('report-submission-form') as HTMLFormElement;
+        form?.reset();
+        setSubmissionType('anonymous');
+
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Submission Failed",
+          description: state.message,
+        });
+      }
+    }
+  }, [state, toast]);
 
   const categoriesQuery = useMemo(() => {
     if (!firestore) return null;
@@ -48,93 +80,7 @@ export function ReportSubmissionForm() {
   }, [firestore]);
   const { data: categories } = useCollection<Category>(categoriesQuery);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsSubmitting(true);
-
-    if (!firestore) {
-      toast({
-        variant: "destructive",
-        title: "Submission Failed",
-        description: "Database not connected. Please try again later.",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
-    const formData = new FormData(event.currentTarget);
-    const title = formData.get('title') as string;
-    const content = formData.get('content') as string;
-    const category = formData.get('category') as string;
-    const submissionType = formData.get('submissionType') as 'anonymous' | 'confidential';
-    const name = formData.get('name') as string | null;
-    const email = formData.get('email') as string | null;
-    const phone = formData.get('phone') as string | null;
-    
-    if (!title || !content || !category) {
-      toast({
-        variant: "destructive",
-        title: "Submission Failed",
-        description: "Please fill out all required fields.",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-    
-    try {
-        const reportId = generateReportId();
-
-        const reportData: Omit<Report, 'docId'> = {
-          id: reportId,
-          title,
-          content,
-          category,
-          submissionType,
-          reporter: {
-            name: name || undefined,
-            email: email || undefined,
-            phone: phone || undefined,
-          },
-          submittedAt: serverTimestamp() as any, // Will be replaced by server
-          status: 'New',
-          severity: 'Medium', // Default severity
-          assignees: [],
-          // AI fields are omitted
-        };
-
-        const reportRef = await addDoc(collection(firestore, 'reports'), reportData);
-
-        await addDoc(collection(firestore, 'audit_logs'), {
-            reportId: reportRef.id,
-            actor: { id: 'system', name: 'System' },
-            action: 'submitted a new report',
-            timestamp: serverTimestamp()
-        });
-        
-        toast({
-            title: "Success",
-            description: "Your report has been submitted.",
-        });
-        
-        setGeneratedId(reportId);
-        setShowSuccessDialog(true);
-        (event.target as HTMLFormElement).reset();
-        setSubmissionType('anonymous');
-
-    } catch (e: any) {
-        console.error('Submission Error:', e);
-        toast({
-            variant: "destructive",
-            title: "Submission Failed",
-            description: e.message || 'An unexpected error occurred. Please try again later.',
-        });
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-
-
-   const copyToClipboard = () => {
+  const copyToClipboard = () => {
     if (generatedId) {
       navigator.clipboard.writeText(generatedId).then(() => {
         toast({
@@ -163,7 +109,7 @@ export function ReportSubmissionForm() {
     <>
     <form
       id="report-submission-form"
-      onSubmit={handleSubmit}
+      action={dispatch}
       className="space-y-6"
     >
       <div className="space-y-3">
@@ -266,9 +212,7 @@ export function ReportSubmissionForm() {
           </div>
       </div>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? <Loader2 className="animate-spin" /> : "Submit Securely"}
-      </Button>
+      <SubmitButton />
     </form>
     <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
       <AlertDialogContent>

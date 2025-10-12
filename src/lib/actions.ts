@@ -4,6 +4,82 @@
 import { getFirebaseAdmin } from '@/firebase/server';
 import { revalidatePath } from 'next/cache';
 import type { Firestore } from 'firebase-admin/firestore';
+import { Report } from './types';
+import { nanoid } from 'nanoid';
+
+function generateReportId() {
+  const prefix = 'IB';
+  const timestamp = Date.now().toString(36).slice(-4);
+  const randomPart = Math.random().toString(36).substring(2, 8);
+  return `${prefix}-${timestamp}-${randomPart}`.toUpperCase();
+}
+
+
+export async function submitReport(prevState: any, formData: FormData) {
+    const { db } = getFirebaseAdmin();
+    const title = formData.get('title') as string;
+    const content = formData.get('content') as string;
+    const category = formData.get('category') as string;
+    const submissionType = formData.get('submissionType') as 'anonymous' | 'confidential';
+    const name = formData.get('name') as string | null;
+    const email = formData.get('email') as string | null;
+    const phone = formData.get('phone') as string | null;
+
+    if (!title || !content || !category) {
+      return { 
+        message: "Please fill out all required fields.",
+        success: false,
+        reportId: null
+      };
+    }
+    
+    try {
+        const reportId = generateReportId();
+
+        const reportData: Omit<Report, 'docId' | 'submittedAt'> = {
+          id: reportId,
+          title,
+          content,
+          category,
+          submissionType,
+          reporter: {
+            name: name || undefined,
+            email: email || undefined,
+            phone: phone || undefined,
+          },
+          status: 'New',
+          severity: 'Medium', // Default severity
+          assignees: [],
+          // AI fields are omitted
+        };
+
+        const reportRef = await db.collection('reports').add({
+            ...reportData,
+            submittedAt: new Date()
+        });
+
+        await db.collection('audit_logs').add({
+            reportId: reportRef.id,
+            actor: { id: 'system', name: 'System' },
+            action: 'submitted a new report',
+            timestamp: new Date()
+        });
+        
+        return {
+            message: "Your report has been submitted.",
+            success: true,
+            reportId: reportId,
+        };
+
+    } catch (e: any) {
+        console.error('Submission Error:', e);
+        return {
+            message: e.message || 'An unexpected error occurred. Please try again later.',
+            success: false,
+            reportId: null
+        };
+    }
+}
 
 export async function createAdminUser(prevState: any, formData: FormData) {
   try {
@@ -199,3 +275,5 @@ export async function initializeData(db: Firestore) {
      console.log('Seeded default content.');
   }
 }
+
+    
