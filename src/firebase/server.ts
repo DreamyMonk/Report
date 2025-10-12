@@ -13,7 +13,7 @@ const mockServiceKey = {
   "type": "service_account",
   "project_id": "wieblower",
   "private_key_id": "d0e1b69829f270034b7911e3b5311f0a2d3c4b5d",
-  "private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC/p+e5gX3x/kY2\\n1f6qj9d7Z2p7x6eP/xT4bN7sZ9xY8l3d2a7n7...\\n-----END PRIVATE KEY-----\\n",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC/p+e5gX3x/kY2\n1f6qj9d7Z2p7x6eP/xT4bN7sZ9xY8l3d2a7n7...\n-----END PRIVATE KEY-----\n",
   "client_email": "firebase-adminsdk-12345@wieblower.iam.gserviceaccount.com",
   "client_id": "123456789012345678901",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
