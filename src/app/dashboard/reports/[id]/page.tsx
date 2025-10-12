@@ -53,7 +53,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
   const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
 
   const handleSendMessage = () => {
-    if (!message.trim() || !firestore || !report?.docId || !userData) return;
+    if (!message.trim() || !firestore || !report?.docId || !userData || !user) return;
 
     const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
     const messageData = {
@@ -61,7 +61,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
       sentAt: serverTimestamp(),
       sender: 'officer' as const,
       senderInfo: {
-        id: userData.id,
+        id: user.uid,
         name: userData.name || userData.email,
         avatarUrl: userData.avatarUrl,
       },
@@ -180,36 +180,36 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                   <div className="h-64 overflow-y-auto pr-4 space-y-4 border rounded-md p-4 bg-secondary/50">
+                   <div className="h-96 overflow-y-auto pr-4 space-y-4 border rounded-md p-4 bg-secondary/50 flex flex-col">
                     {messagesLoading && <p>Loading messages...</p>}
                     {messages?.map((msg) => (
-                        msg.sender === 'officer' ? (
-                          <div key={msg.docId} className="flex items-start gap-3 justify-end">
-                              <div className="p-3 rounded-lg bg-primary text-primary-foreground max-w-[80%]">
-                                  <p className="text-sm font-semibold">{msg.senderInfo?.name || 'Case Officer'}</p>
-                                  <p className="text-sm">{msg.content}</p>
-                                  <p className="text-xs text-primary-foreground/70 text-right mt-1">{msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : 'sending...'}</p>
-                              </div>
-                              <Avatar className="h-8 w-8">
-                                  <AvatarImage src={msg.senderInfo?.avatarUrl} />
-                                  <AvatarFallback>{msg.senderInfo?.name?.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                          </div>
-                        ) : (
-                          <div key={msg.docId} className="flex items-start gap-3">
-                              <Avatar className="h-8 w-8">
-                                  <AvatarFallback>
-                                      <User className="h-5 w-5"/>
-                                  </AvatarFallback>
-                              </Avatar>
-                              <div className="p-3 rounded-lg bg-background max-w-[80%] border">
-                                  <p className="text-sm font-semibold">Reporter</p>
-                                  <p className="text-sm">{msg.content}</p>
-                                  <p className="text-xs text-muted-foreground text-right mt-1">{msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : '...'}</p>
-                              </div>
-                          </div>
-                        )
+                        <div key={msg.docId} className={cn("flex items-end gap-3", msg.sender === 'officer' ? 'justify-end' : 'justify-start')}>
+                            {msg.sender === 'reporter' && (
+                                <Avatar className="h-8 w-8">
+                                    <AvatarFallback>
+                                        <User className="h-5 w-5"/>
+                                    </AvatarFallback>
+                                </Avatar>
+                            )}
+                            <div className={cn(
+                                "p-3 rounded-lg max-w-[80%]",
+                                msg.sender === 'officer' ? 'bg-primary text-primary-foreground' : 'bg-background border'
+                            )}>
+                                {msg.sender === 'officer' && <p className="text-sm font-semibold mb-1">{msg.senderInfo?.name || 'Case Officer'}</p>}
+                                <p className="text-sm">{msg.content}</p>
+                                <p className={cn("text-xs mt-1 text-right", msg.sender === 'officer' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
+                                    {msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : 'sending...'}
+                                </p>
+                            </div>
+                             {msg.sender === 'officer' && (
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={msg.senderInfo?.avatarUrl} />
+                                    <AvatarFallback>{msg.senderInfo?.name?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                            )}
+                        </div>
                     ))}
+                    {!messagesLoading && messages?.length === 0 && <p className="text-center text-muted-foreground m-auto">No messages yet.</p>}
                     </div>
 
                     <div className="pt-4 space-y-3">
@@ -346,5 +346,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
     </div>
   );
 }
+
+    
 
     
