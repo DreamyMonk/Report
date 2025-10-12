@@ -3,21 +3,24 @@ import { notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send } from "lucide-react";
 import { format } from "date-fns";
-import { useDoc, useFirestore } from "@/firebase";
-import { Report } from "@/lib/types";
-import { doc } from "firebase/firestore";
+import { useCollection, useDoc, useFirestore } from "@/firebase";
+import { Report, Message, User as AppUser } from "@/lib/types";
+import { collection, doc, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 import { AssignCaseDialog } from "@/components/dashboard/assign-case-dialog";
 import { useMemo, useState } from "react";
+import { useAuth } from "@/firebase/auth-provider";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [message, setMessage] = useState('');
   const firestore = useFirestore();
+  const { userData } = useAuth();
+  const { toast } = useToast();
 
   const reportRef = useMemo(() => {
     if (!firestore) return null;
@@ -25,6 +28,42 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
   }, [firestore, params.id]);
   
   const { data: report, loading } = useDoc<Report>(reportRef);
+
+  const messagesQuery = useMemo(() => {
+    if (!firestore || !report) return null;
+    return query(collection(firestore, 'reports', report.docId!, 'messages'), orderBy('sentAt', 'asc'));
+  }, [firestore, report]);
+
+  const { data: messages, loading: messagesLoading } = useCollection<Message>(messagesQuery);
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || !firestore || !report || !userData) return;
+
+    try {
+      await addDoc(collection(firestore, 'reports', report.docId!, 'messages'), {
+        content: message,
+        sentAt: serverTimestamp(),
+        sender: 'officer',
+        senderInfo: {
+          id: userData.id,
+          name: userData.name,
+          avatarUrl: userData.avatarUrl
+        }
+      });
+      setMessage('');
+      toast({
+        title: "Message sent!",
+      });
+    } catch (error) {
+      console.error("Error sending message: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send message.",
+      });
+    }
+  }
+
 
   if (loading) {
     return <div>Loading...</div>
@@ -62,6 +101,57 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+                <CardTitle>Communication Channel</CardTitle>
+                <CardDescription>Communicate with the reporter. Your messages will appear with your name and role.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                   <div className="space-y-4 h-64 overflow-y-auto pr-4 border rounded-md p-4 bg-secondary/50">
+                    {messagesLoading && <p>Loading messages...</p>}
+                    {messages?.map((msg) => (
+                        msg.sender === 'officer' ? (
+                          <div key={msg.docId} className="flex items-start gap-3 justify-end">
+                              <div className="p-3 rounded-lg bg-primary text-primary-foreground max-w-[80%]">
+                                  <p className="text-sm font-semibold">{msg.senderInfo?.name || 'Case Officer'}</p>
+                                  <p className="text-sm">{msg.content}</p>
+                                  <p className="text-xs text-primary-foreground/70 text-right mt-1">{msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : 'sending...'}</p>
+                              </div>
+                              <Avatar className="h-8 w-8">
+                                  <AvatarImage src={msg.senderInfo?.avatarUrl} />
+                                  <AvatarFallback>{msg.senderInfo?.name?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                          </div>
+                        ) : (
+                          <div key={msg.docId} className="flex items-start gap-3">
+                              <Avatar className="h-8 w-8">
+                                  <AvatarFallback>
+                                      <User className="h-5 w-5"/>
+                                  </AvatarFallback>
+                              </Avatar>
+                              <div className="p-3 rounded-lg bg-background max-w-[80%] border">
+                                  <p className="text-sm font-semibold">Reporter</p>
+                                  <p className="text-sm">{msg.content}</p>
+                                  <p className="text-xs text-muted-foreground text-right mt-1">{msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : '...'}</p>
+                              </div>
+                          </div>
+                        )
+                    ))}
+                    </div>
+
+                    <div className="pt-4 space-y-3">
+                        <Textarea placeholder="Type your message to the reporter..." value={message} onChange={(e) => setMessage(e.target.value)} />
+                         <div className="flex justify-end">
+                            <Button size="sm" onClick={handleSendMessage} disabled={!message.trim()}>
+                                <Send className="mr-2 h-4 w-4"/>Send Message
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+          </Card>
+          
           <Card className="bg-primary/5 border-primary/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -85,23 +175,6 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
                 <h3 className="font-semibold mb-2">Reasoning</h3>
                 <p className="text-sm text-muted-foreground">{report.aiReasoning}</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Suggested Investigation Steps</CardTitle>
-              <CardDescription>AI-recommended actions to begin the investigation.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {report.aiSuggestedSteps?.map((step, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <Checkbox id={`step-${index}`} />
-                  <Label htmlFor={`step-${index}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    {step}
-                  </Label>
-                </div>
-              ))}
             </CardContent>
           </Card>
         </div>
@@ -160,6 +233,21 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
               <Button variant="outline" className="w-full mt-4" onClick={() => setIsAssignDialogOpen(true)}>
                 {report.assignee ? "Change Assignee" : "Assign Case"}
               </Button>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Suggested Investigation Steps</CardTitle>
+              <CardDescription>AI-recommended actions to begin the investigation.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {report.aiSuggestedSteps?.map((step, index) => (
+                <div key={index} className="flex items-center space-x-3">
+                  <p className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    - {step}
+                  </p>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>

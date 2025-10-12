@@ -35,5 +35,10 @@ export type Message = {
   content: string;
   sentAt: Timestamp;
   sender: 'reporter' | 'officer';
+  senderInfo?: {
+    id: string;
+    name: string;
+    avatarUrl: string;
+  };
   fileUrl?: string;
 }
