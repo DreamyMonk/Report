@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Report, User } from "@/lib/types";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, where, doc, updateDoc, addDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { useMemo, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -58,7 +58,7 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
 
   useEffect(() => {
     if (open) {
-      if (mode === 'add' && report.assignees) {
+      if (mode === 'transfer' && report.assignees) {
         setSelectedUserIds(report.assignees.map(a => a.id));
       } else {
         setSelectedUserIds([]);
@@ -71,12 +71,6 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
     if (!users) return [];
     
     let availableUsers = users;
-
-    // In add mode, don't show users who are already assigned.
-    if (mode === 'add' && report.assignees) {
-      const assignedIds = report.assignees.map(a => a.id);
-      availableUsers = users.filter(u => !assignedIds.includes(u.id));
-    }
     
     if (searchTerm) {
         return availableUsers.filter(u => 
@@ -86,7 +80,7 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
     }
     return availableUsers;
 
-  }, [users, searchTerm, mode, report.assignees]);
+  }, [users, searchTerm]);
 
 
   const handleUpdateAssignees = async () => {
@@ -127,8 +121,10 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
         await updateDoc(reportRef, { assignees: finalAssignees });
       } else if (mode === 'add') {
         const existingAssignees = report.assignees || [];
-        finalAssignees = [...existingAssignees, ...newAssigneeData];
-        actionText = `added ${newAssigneeData.map(a => a.name).join(', ')} to the case`;
+        const existingIds = existingAssignees.map(a => a.id);
+        const trulyNewAssignees = newAssigneeData.filter(a => !existingIds.includes(a.id));
+        finalAssignees = [...existingAssignees, ...trulyNewAssignees];
+        actionText = `added ${trulyNewAssignees.map(a => a.name).join(', ')} to the case`;
         await updateDoc(reportRef, { assignees: finalAssignees });
       }
 
@@ -167,11 +163,8 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
 
   const finalSelection = useMemo(() => {
      let selection = users?.filter(u => selectedUserIds.includes(u.id)) || [];
-     if (mode === 'add') {
-        return [...(report.assignees || []), ...selection.filter(u => !(report.assignees || []).find(a => a.id === u.id))];
-     }
      return selection;
-  }, [users, selectedUserIds, mode, report.assignees]);
+  }, [users, selectedUserIds]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -194,9 +187,11 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
                         return (
                              <Label
                                 key={u.id}
+                                htmlFor={`user-checkbox-${u.id}`}
                                 className="flex items-center gap-3 p-2 rounded-md hover:bg-accent cursor-pointer"
                             >
                                 <Checkbox
+                                    id={`user-checkbox-${u.id}`}
                                     checked={isSelected}
                                     onCheckedChange={() => toggleUserSelection(u.id)}
                                 />
