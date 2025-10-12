@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "avatar1",
+      "description": "Avatar of a person with short hair",
+      "imageUrl": "https://picsum.photos/seed/100/100/100",
+      "imageHint": "person face"
+    },
+    {
+      "id": "avatar2",
+      "description": "Avatar of a person with long hair",
+      "imageUrl": "https://picsum.photos/seed/101/100/100",
+      "imageHint": "person face"
+    },
+    {
+      "id": "avatar3",
+      "description": "Avatar of a person wearing glasses",
+      "imageUrl": "https://picsum.photos/seed/102/100/100",
+      "imageHint": "person glasses"
+    },
+    {
+      "id": "avatar4",
+      "description": "Avatar of a person smiling",
+      "imageUrl": "https://picsum.photos/seed/103/100/100",
+      "imageHint": "person smiling"
+    }
+  ]
 }
