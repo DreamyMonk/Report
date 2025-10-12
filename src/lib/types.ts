@@ -14,7 +14,11 @@ export type Report = {
   status: "New" | "In Progress" | "Resolved" | "Dismissed";
   severity: "Low" | "Medium" | "High";
   assignee: User | null;
-  isAnonymous: boolean;
+  submissionType: "anonymous" | "confidential";
+  reporter?: {
+    name?: string;
+    email?: string;
+  };
   aiSummary?: string;
   aiRiskAssessment?: string;
   aiSuggestedSteps?: string[];

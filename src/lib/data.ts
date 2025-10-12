@@ -9,7 +9,7 @@ export const users: User[] = [
 
 export const reports: Report[] = [
   {
-    id: "rep-001",
+    id: "IB-K5A8-9G3H1J",
     title: "Suspicious Financial Transactions in Q3",
     content: "I have noticed several large, undocumented transactions from the marketing department's budget to a vendor I've never heard of. The amounts are just under the threshold that requires director approval. This has been happening for the past three months and I'm concerned it could be a form of embezzlement.",
     category: "Financial",
@@ -17,7 +17,11 @@ export const reports: Report[] = [
     status: "New",
     severity: "High",
     assignee: null,
-    isAnonymous: false,
+    submissionType: "confidential",
+    reporter: {
+      name: "A Concerned Employee",
+      email: "confidential.reporter@example.com",
+    },
     aiSummary: "The report details potentially fraudulent financial activities, specifically large, recurring, undocumented transactions from the marketing budget to an unknown vendor, suggesting possible embezzlement.",
     aiRiskAssessment: "High risk due to potential financial loss, legal implications, and reputational damage. Immediate investigation is required.",
     aiSuggestedSteps: [
@@ -29,7 +33,7 @@ export const reports: Report[] = [
     aiReasoning: "The pattern of transactions just below approval thresholds is a classic red flag for financial fraud. The potential for significant financial loss and legal exposure justifies the high severity and immediate, structured investigation."
   },
   {
-    id: "rep-002",
+    id: "IB-L9B1-4K2P5N",
     title: "Workplace Harassment by a Team Lead",
     content: "A team lead in the engineering department has been consistently making inappropriate comments and creating a hostile work environment for several junior female employees. Multiple people have mentioned feeling uncomfortable but are afraid to speak up for fear of retaliation.",
     category: "HR",
@@ -37,7 +41,7 @@ export const reports: Report[] = [
     status: "In Progress",
     severity: "Medium",
     assignee: users[0],
-    isAnonymous: true,
+    submissionType: "anonymous",
     aiSummary: "An anonymous report alleges workplace harassment by an engineering team lead, creating a hostile environment for junior female employees who fear retaliation.",
     aiRiskAssessment: "Medium to High risk. This poses a significant legal and reputational risk, can harm employee morale and productivity, and could lead to high turnover.",
     aiSuggestedSteps: [
@@ -49,7 +53,7 @@ export const reports: Report[] = [
     aiReasoning: "Harassment claims are serious and require a delicate but firm response. The 'Medium' severity reflects the personnel-focused nature, but it could escalate to 'High' if ignored. The steps focus on gathering information discreetly while protecting the reporter and potential victims."
   },
   {
-    id: "rep-003",
+    id: "IB-M2C4-7R8S9T",
     title: "Safety Violations in the Warehouse",
     content: "Forklift operators are not consistently using safety harnesses, and emergency exits are frequently blocked by pallets. There was a near-miss accident last week that went unreported. Management seems to be ignoring these issues despite verbal complaints.",
     category: "Safety",
@@ -57,7 +61,11 @@ export const reports: Report[] = [
     status: "Resolved",
     severity: "High",
     assignee: users[1],
-    isAnonymous: false,
+    submissionType: 'confidential',
+    reporter: {
+        name: 'Warehouse Worker',
+        email: 'safety.first@example.com'
+    },
     aiSummary: "The report highlights critical safety violations in the warehouse, including improper use of equipment and blocked emergency exits, along with a recent unreported near-miss accident.",
     aiRiskAssessment: "High risk due to the immediate threat of physical injury or death to employees. This could lead to severe legal penalties and operational shutdowns.",
     aiSuggestedSteps: [
@@ -69,7 +77,7 @@ export const reports: Report[] = [
     aiReasoning: "The potential for serious injury or fatality makes this a high-priority issue. The suggested steps are designed to mitigate immediate risk first, followed by investigation and corrective action."
   },
   {
-    id: "rep-004",
+    id: "IB-N5D6-1V2W3X",
     title: "Office supplies are constantly missing",
     content: "The supply closet seems to be running out of pens and notepads much faster than usual. I think someone might be taking them home for personal use. It's not a huge deal but it's getting annoying.",
     category: "Other",
@@ -77,10 +85,10 @@ export const reports: Report[] = [
     status: "Dismissed",
     severity: "Low",
     assignee: users[2],
-    isAnonymous: true,
+    submissionType: "anonymous",
     aiSummary: "An anonymous report notes that office supplies like pens and notepads are disappearing at an unusually high rate, suggesting minor theft for personal use.",
     aiRiskAssessment: "Low risk. The financial impact is minimal, and it does not pose a legal or safety threat. It is primarily an issue of workplace etiquette and minor policy violation.",
-    aiSuggestedSteps: [
+aiSuggestedSteps: [
       "Monitor supply closet inventory for a few weeks to confirm the high usage rate.",
       "Send a general reminder to all staff about company policy on office supplies.",
       "Consider implementing a sign-out sheet if the problem persists."
@@ -88,7 +96,7 @@ export const reports: Report[] = [
     aiReasoning: "This issue is minor. The low severity reflects the low impact on the business. The suggested steps are low-effort and aim to address the issue without creating a major incident."
   },
    {
-    id: "rep-005",
+    id: "IB-P8E9-3Y4Z5A",
     title: "Project Data Falsification",
     content: "I have reason to believe that the progress metrics for 'Project Titan' are being intentionally inflated to meet deadlines. The reported completion rates do not match the actual work that has been done. This could lead to major problems with the client when the final product is delivered.",
     category: "Financial",
@@ -96,7 +104,7 @@ export const reports: Report[] = [
     status: "New",
     severity: "High",
     assignee: null,
-    isAnonymous: true,
+    submissionType: "anonymous",
     aiSummary: "Anonymous report alleging intentional falsification of progress metrics for a key client project ('Project Titan'). The reporter warns of future client-side issues upon delivery.",
     aiRiskAssessment: "High risk. Falsifying data for a client can lead to breach of contract, significant financial penalties, loss of the client, and severe reputational damage.",
     aiSuggestedSteps: [

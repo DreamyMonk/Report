@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,20 +9,49 @@ import { submitReport } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileUp, AlertTriangle } from "lucide-react";
+import { Loader2, FileUp } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const ReportSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
-  category: z.enum(["Financial", "HR", "Safety", "Other"]),
+  category: z.enum(["Financial", "HR", "Safety", "Other"], { required_error: "Please select a category." }),
   content: z.string().min(20, "Description must be at least 20 characters long."),
-  isAnonymous: z.boolean().default(false),
+  submissionType: z.enum(["anonymous", "confidential"]),
+  name: z.string().optional(),
+  email: z.string().optional(),
+}).refine(data => {
+  if (data.submissionType === 'confidential') {
+    return !!data.email && z.string().email().safeParse(data.email).success;
+  }
+  return true;
+}, {
+  message: "A valid email is required for confidential submissions.",
+  path: ["email"],
+}).refine(data => {
+  if (data.submissionType === 'anonymous' && data.email) {
+     return z.string().email().safeParse(data.email).success;
+  }
+  return true;
+},
+{
+  message: "Please enter a valid email address.",
+  path: ["email"],
 });
+
 
 type ReportFormValues = z.infer<typeof ReportSchema>;
 
@@ -36,9 +65,12 @@ function SubmitButton() {
 }
 
 export function ReportSubmissionForm() {
-  const initialState = { message: null, errors: {}, success: false };
+  const initialState = { message: null, errors: {}, success: false, reportId: null };
   const [state, dispatch] = useFormState(submitReport, initialState);
   const { toast } = useToast();
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [generatedId, setGeneratedId] = useState<string | null>(null);
+
 
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(ReportSchema),
@@ -46,16 +78,29 @@ export function ReportSubmissionForm() {
       title: "",
       category: undefined,
       content: "",
-      isAnonymous: false,
+      submissionType: "anonymous",
+      name: "",
+      email: "",
     },
   });
 
-  useEffect(() => {
-    if (state.success && state.message) {
-      toast({
-        title: "Submission Successful",
-        description: state.message,
+  const submissionType = form.watch("submissionType");
+
+   const copyToClipboard = () => {
+    if (generatedId) {
+      navigator.clipboard.writeText(generatedId).then(() => {
+        toast({
+          title: "Copied!",
+          description: "Your report ID has been copied to your clipboard.",
+        });
       });
+    }
+  };
+
+  useEffect(() => {
+    if (state.success && state.message && state.reportId) {
+      setGeneratedId(state.reportId);
+      setShowSuccessDialog(true);
       form.reset();
     } else if (!state.success && state.message) {
        toast({
@@ -67,8 +112,111 @@ export function ReportSubmissionForm() {
   }, [state, toast, form]);
 
   return (
+    <>
     <Form {...form}>
-      <form action={dispatch} className="space-y-6">
+      <form
+        action={(formData) => {
+          const valid = form.trigger();
+          if (valid) {
+            dispatch(formData);
+          }
+        }}
+        className="space-y-6"
+      >
+        <FormField
+          control={form.control}
+          name="submissionType"
+          render={({ field }) => (
+            <FormItem className="space-y-3">
+              <FormLabel>Submission Type</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
+                  <FormItem>
+                     <Label className="cursor-pointer">
+                      <Card className={`hover:bg-accent/50 transition-colors ${field.value === 'anonymous' ? 'ring-2 ring-primary' : ''}`}>
+                          <CardContent className="p-4 flex items-center gap-4">
+                              <RadioGroupItem value="anonymous" id="anonymous" />
+                              <div className="space-y-1">
+                                  <p className="font-medium">Submit Anonymously</p>
+                                  <p className="text-sm text-muted-foreground">Your identity is completely hidden. You can optionally provide an email for updates.</p>
+                              </div>
+                          </CardContent>
+                      </Card>
+                     </Label>
+                  </FormItem>
+                  <FormItem>
+                     <Label className="cursor-pointer">
+                        <Card className={`hover:bg-accent/50 transition-colors ${field.value === 'confidential' ? 'ring-2 ring-primary' : ''}`}>
+                          <CardContent className="p-4 flex items-center gap-4">
+                              <RadioGroupItem value="confidential" id="confidential" />
+                              <div className="space-y-1">
+                                  <p className="font-medium">Submit Confidentially</p>
+                                  <p className="text-sm text-muted-foreground">Your identity is shared only with the assigned case officer. Email is required.</p>
+                              </div>
+                          </CardContent>
+                        </Card>
+                     </Label>
+                  </FormItem>
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        {submissionType === 'confidential' && (
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Your Name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email (Required)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="your.email@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+           </div>
+        )}
+        
+         {submissionType === 'anonymous' && (
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email for Updates (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="your.email@example.com" {...field} />
+                  </FormControl>
+                   <p className="text-xs text-muted-foreground">Provide an email if you want to receive notifications about your case.</p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        )}
+
+
         <FormField
           control={form.control}
           name="title"
@@ -139,30 +287,26 @@ export function ReportSubmissionForm() {
             </div>
         </div>
 
-        <FormField
-          control={form.control}
-          name="isAnonymous"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-background">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  name="isAnonymous"
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Submit Anonymously</FormLabel>
-                <p className="text-sm text-muted-foreground">
-                  If checked, your identity will not be attached to this report.
-                </p>
-              </div>
-            </FormItem>
-          )}
-        />
-
         <SubmitButton />
       </form>
     </Form>
+    <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Submission Successful!</AlertDialogTitle>
+          <AlertDialogDescription>
+            Thank you for your courage and integrity. Your report has been submitted. Please save this unique ID to track the status of your report.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="my-4 p-4 bg-secondary rounded-lg text-center font-mono text-lg font-semibold tracking-widest">
+            {generatedId}
+        </div>
+        <AlertDialogFooter>
+          <Button variant="outline" onClick={copyToClipboard}>Copy ID</Button>
+          <AlertDialogAction onClick={() => setShowSuccessDialog(false)}>Close</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

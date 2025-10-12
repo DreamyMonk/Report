@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, CheckCircle, Hourglass, XCircle, UserX } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, CheckCircle, Hourglass, XCircle, UserX, EyeOff, Lock } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
@@ -17,22 +17,18 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
     notFound();
   }
 
-  const statusIcons = {
-    "New": <FileText className="h-4 w-4" />,
-    "In Progress": <Hourglass className="h-4 w-4" />,
-    "Resolved": <CheckCircle className="h-4 w-4" />,
-    "Dismissed": <XCircle className="h-4 w-4" />,
-  };
-  const severityIcons = {
-    "Low": <Shield className="h-4 w-4" />,
-    "Medium": <Shield className="h-4 w-4" />,
-    "High": <Shield className="h-4 w-4 text-destructive" />,
-  };
+  const isConfidential = report.submissionType === 'confidential';
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <Badge variant={report.severity === 'High' ? 'destructive' : 'secondary'} className="capitalize mb-2">{report.severity} Severity</Badge>
+        <div className="flex items-center gap-2 mb-2">
+          <Badge variant={report.severity === 'High' ? 'destructive' : 'secondary'} className="capitalize">{report.severity} Severity</Badge>
+           <Badge variant="outline" className="capitalize flex items-center gap-1">
+              {isConfidential ? <Lock className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+              {report.submissionType}
+           </Badge>
+        </div>
         <h1 className="font-headline text-4xl font-bold">{report.title}</h1>
       </div>
 
@@ -111,10 +107,18 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
                 <span className="text-muted-foreground flex items-center gap-2"><Tag className="h-4 w-4"/>Category</span>
                 <span className="font-medium">{report.category}</span>
               </div>
-               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center gap-2">{report.isAnonymous ? <UserX className="h-4 w-4"/> : <User className="h-4 w-4"/>}Reporter</span>
-                <span className="font-medium">{report.isAnonymous ? "Anonymous" : "Identity Provided"}</span>
-              </div>
+              {isConfidential && report.reporter?.name && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground flex items-center gap-2"><User className="h-4 w-4"/>Reporter Name</span>
+                  <span className="font-medium">{report.reporter.name}</span>
+                </div>
+              )}
+               {isConfidential && report.reporter?.email && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground flex items-center gap-2"><User className="h-4 w-4"/>Reporter Email</span>
+                  <span className="font-medium">{report.reporter.email}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
           <Card>
