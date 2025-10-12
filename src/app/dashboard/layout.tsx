@@ -29,7 +29,7 @@ export default function DashboardLayout({
           <SidebarHeader>
             <div className="flex items-center gap-2">
               <Logo className="h-6 w-6 text-primary" />
-              <span className="font-headline text-lg font-bold text-primary">Whistleblower</span>
+              <span className="font-headline text-lg font-bold text-primary break-words">Whistleblower</span>
             </div>
           </SidebarHeader>
           <SidebarContent>
@@ -38,7 +38,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild>
                   <Link href="/dashboard">
                     <Home />
-                    <span>Dashboard</span>
+                    <span className="break-words">Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -46,7 +46,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild>
                   <Link href="/dashboard/reports">
                     <FileText />
-                    <span>All Reports</span>
+                    <span className="break-words">All Reports</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -54,7 +54,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild>
                   <Link href="/dashboard/users">
                     <Users />
-                    <span>Users</span>
+                    <span className="break-words">Users</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -62,7 +62,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild>
                   <Link href="/dashboard/audit-log">
                     <History />
-                    <span>Audit Log</span>
+                    <span className="break-words">Audit Log</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -70,7 +70,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton asChild>
                   <Link href="/dashboard/settings">
                     <Settings />
-                    <span>Settings</span>
+                    <span className="break-words">Settings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
