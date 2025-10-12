@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export type User = {
   id: string;
   name: string;
@@ -10,7 +12,7 @@ export type Report = {
   title: string;
   content: string;
   category: "Financial" | "HR" | "Safety" | "Other";
-  submittedAt: string;
+  submittedAt: Timestamp | string;
   status: "New" | "In Progress" | "Resolved" | "Dismissed";
   severity: "Low" | "Medium" | "High";
   assignee: User | null;
