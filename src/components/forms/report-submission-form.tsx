@@ -123,18 +123,22 @@ export function ReportSubmissionForm() {
       });
     }
   }, [state, toast, form]);
+  
+  const handleFormSubmit = (data: ReportFormValues) => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+        if (value) {
+            formData.append(key, value as string);
+        }
+    });
+    dispatch(formData);
+  }
 
   return (
     <>
     <Form {...form}>
       <form
-        action={(formData) => {
-          form.trigger().then((valid) => {
-             if (valid) {
-                dispatch(formData);
-             }
-          });
-        }}
+        onSubmit={form.handleSubmit(handleFormSubmit)}
         className="space-y-6"
       >
         <FormField
