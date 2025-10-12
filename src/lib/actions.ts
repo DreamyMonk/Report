@@ -92,6 +92,13 @@ export async function submitReport(
   prevState: State,
   formData: FormData
 ): Promise<State> {
+  if (!db) {
+    return {
+      message: 'The server is not configured to handle submissions. Please contact support.',
+      success: false,
+    };
+  }
+  
   const title = formData.get('title') as string;
   const content = formData.get('content') as string;
   const category = formData.get('category') as string;
@@ -100,13 +107,6 @@ export async function submitReport(
   const email = formData.get('email') as string | null;
   const phone = formData.get('phone') as string | null;
 
-  if (!db) {
-    return {
-      message: 'The server is not configured to handle submissions. Please contact support.',
-      success: false,
-    };
-  }
-  
   if (!title || !content || !category) {
     return {
       message: 'Title, content, and category are required.',
@@ -173,7 +173,7 @@ export async function submitReport(
       reportId: reportId,
     };
   } catch (e: any) {
-    console.error(e);
+    console.error('Submission Error:', e);
     return {
       message: e.message || 'An unexpected error occurred. Please try again later.',
       success: false,
