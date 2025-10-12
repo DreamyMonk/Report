@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/firebase/auth-provider';
 
 export const metadata: Metadata = {
-  title: 'Integrity Beacon',
+  title: 'Whistleblower Management Portal',
   description: 'A secure platform for anonymous whistleblower reporting.',
 };
 

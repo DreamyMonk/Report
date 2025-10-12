@@ -28,7 +28,7 @@ export default function DashboardLayout({
           <SidebarHeader>
             <div className="flex items-center gap-2">
               <Logo className="h-6 w-6 text-primary" />
-              <span className="font-headline text-lg font-bold text-primary">Integrity Beacon</span>
+              <span className="font-headline text-lg font-bold text-primary">Whistleblower</span>
             </div>
           </SidebarHeader>
           <SidebarContent>

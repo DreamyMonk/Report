@@ -2,7 +2,7 @@ export function Logo({ className }: { className?: string }) {
   return (
     <svg
       role="img"
-      aria-label="Integrity Beacon Logo"
+      aria-label="Whistleblower Management Portal Logo"
       className={className}
       xmlns="http://www.w3.org/2000/svg"
       width="24"

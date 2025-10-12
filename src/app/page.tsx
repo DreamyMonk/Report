@@ -9,6 +9,8 @@ import { AppContent } from '@/lib/types';
 import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useMemo } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
 export default function Home() {
     const firestore = useFirestore();
@@ -23,7 +25,7 @@ export default function Home() {
       <header className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2">
           <Logo className="h-6 w-6 text-primary" />
-          <span className="font-headline text-xl font-bold">Integrity Beacon</span>
+          <span className="font-headline text-xl font-bold">Whistleblower Management Portal</span>
         </Link>
         <div className="flex items-center gap-2">
            <Button asChild>
@@ -66,7 +68,7 @@ export default function Home() {
         </div>
       </main>
       <footer className="py-4 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} Integrity Beacon. All rights reserved.
+        © {new Date().getFullYear()} Whistleblower Management Portal. All rights reserved.
       </footer>
     </div>
   );

@@ -66,7 +66,7 @@ export default function TrackReportPage() {
         <div className="mb-8 flex flex-col items-center">
           <Link href="/" className="mb-4 flex items-center gap-2">
             <Logo className="h-8 w-8 text-primary" />
-            <span className="font-headline text-2xl font-bold">Integrity Beacon</span>
+            <span className="font-headline text-2xl font-bold">Whistleblower Management Portal</span>
           </Link>
           <h1 className="text-2xl font-bold">Track Your Report</h1>
           <p className="text-muted-foreground text-center">Enter the unique ID you received upon submission.</p>
