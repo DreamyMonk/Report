@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import {
@@ -8,6 +9,7 @@ import {
   DocumentData,
   FirestoreError,
   QuerySnapshot,
+  getDocs,
 } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 
@@ -48,25 +50,41 @@ export function useCollection<T>(
       q = queryRef.current;
     }
 
-    const unsubscribe = onSnapshot(
-      q,
-      (querySnapshot: QuerySnapshot<DocumentData>) => {
-        const docs = querySnapshot.docs.map((doc) => ({
-          docId: doc.id,
-          ...doc.data(),
-        })) as T[];
-        setData(docs);
-        setLoading(false);
-      },
-      (err: FirestoreError) => {
-        console.error(err);
-        setError(err);
-        setLoading(false);
-      }
-    );
+    if (options.listen) {
+        const unsubscribe = onSnapshot(
+        q,
+        (querySnapshot: QuerySnapshot<DocumentData>) => {
+            const docs = querySnapshot.docs.map((doc) => ({
+            docId: doc.id,
+            ...doc.data(),
+            })) as T[];
+            setData(docs);
+            setLoading(false);
+        },
+        (err: FirestoreError) => {
+            console.error(err);
+            setError(err);
+            setLoading(false);
+        }
+        );
+        return () => unsubscribe();
+    } else {
+        getDocs(q).then((querySnapshot) => {
+            const docs = querySnapshot.docs.map((doc) => ({
+                docId: doc.id,
+                ...doc.data(),
+            })) as T[];
+            setData(docs);
+            setLoading(false);
+        }).catch((err) => {
+            console.error(err);
+            setError(err);
+            setLoading(false);
+        });
+    }
 
-    return () => unsubscribe();
-  }, [firestore, queryRef]);
+
+  }, [firestore, queryRef, options.listen]);
 
   return { data, loading, error, firestore };
 }
