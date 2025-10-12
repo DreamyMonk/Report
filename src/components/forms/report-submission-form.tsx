@@ -144,7 +144,7 @@ export function ReportSubmissionForm() {
     const formData = new FormData();
     Object.entries(data).forEach(([key, value]) => {
       if (value) {
-        formData.append(key, value);
+        formData.append(key, value as string);
       }
     });
     dispatch(formData);
@@ -344,3 +344,5 @@ export function ReportSubmissionForm() {
     </>
   );
 }
+
+    
