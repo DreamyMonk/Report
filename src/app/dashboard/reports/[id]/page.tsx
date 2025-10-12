@@ -242,7 +242,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
             </CardHeader>
             <CardContent className="space-y-4">
               {report.aiSuggestedSteps?.map((step, index) => (
-                <div key={index} className="flex items-center space-x-3">
+                <div key={index} className="flex items-start space-x-3">
                   <p className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                     - {step}
                   </p>

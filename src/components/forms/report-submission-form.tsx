@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileUp } from "lucide-react";
+import { Loader2, FileUp, Info } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Alert, AlertDescription } from "../ui/alert";
 
 const ReportSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
@@ -123,6 +124,14 @@ export function ReportSubmissionForm() {
         }}
         className="space-y-6"
       >
+
+        <Alert variant="default" className="border-blue-500/50 text-blue-900 dark:text-blue-200 [&>svg]:text-blue-600 dark:[&>svg]:text-blue-400">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+                We do not track your IP address. If you choose "Confidential", your details will only be visible to the assigned case officer.
+            </AlertDescription>
+        </Alert>
+
         <FormField
           control={form.control}
           name="submissionType"

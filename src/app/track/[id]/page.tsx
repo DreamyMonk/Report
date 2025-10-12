@@ -122,7 +122,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                               <div className="space-y-4 h-64 overflow-y-auto pr-4">
+                               <div className="space-y-4 h-64 overflow-y-auto pr-4 border rounded-md p-4 bg-background">
                                 {messagesLoading && <p>Loading messages...</p>}
                                 {messages?.map((msg) => (
                                     msg.sender === 'reporter' ? (
@@ -144,6 +144,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                                               <AvatarFallback>{report.assignee?.name.charAt(0)}</AvatarFallback>
                                           </Avatar>
                                           <div className="p-3 rounded-lg bg-secondary max-w-[80%]">
+                                              <p className="text-sm font-semibold">{report.assignee?.name}</p>
                                               <p className="text-sm">{msg.content}</p>
                                               <p className="text-xs text-muted-foreground text-right mt-1">{msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : '...'}</p>
                                           </div>
