@@ -2,7 +2,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { useForm, useFormContext } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { submitReport } from "@/lib/actions";
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileUp } from "lucide-react";
+import { Loader2, FileUp, Download } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -61,6 +61,15 @@ const ReportSchema = z.object({
 type ReportFormValues = z.infer<typeof ReportSchema>;
 
 
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending} className="w-full">
+      {pending ? <Loader2 className="animate-spin" /> : "Submit Securely"}
+    </Button>
+  );
+}
+
 export function ReportSubmissionForm() {
   const initialState = { message: null, errors: {}, success: false, reportId: null };
   const [state, dispatch] = useActionState(submitReport, initialState);
@@ -102,6 +111,20 @@ export function ReportSubmissionForm() {
       });
     }
   };
+  
+  const downloadAsTxt = () => {
+    if (generatedId) {
+      const blob = new Blob([`Your report ID is: ${generatedId}`], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'report-id.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
 
   useEffect(() => {
     if (state.success && state.message && state.reportId) {
@@ -117,31 +140,11 @@ export function ReportSubmissionForm() {
     }
   }, [state, toast, form]);
   
-  const handleFormSubmit = (data: ReportFormValues) => {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-        if (value) {
-            formData.append(key, value as string);
-        }
-    });
-    dispatch(formData);
-  }
-  
-  function SubmitButton() {
-    const { pending } = useFormStatus();
-    const { formState } = useFormContext();
-    return (
-      <Button type="submit" disabled={!formState.isDirty || !formState.isValid || pending} className="w-full">
-        {pending ? <Loader2 className="animate-spin" /> : "Submit Securely"}
-      </Button>
-    );
-  }
-
   return (
     <>
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(handleFormSubmit)}
+        action={(formData) => dispatch(formData)}
         className="space-y-6"
       >
         <FormField
@@ -310,9 +313,9 @@ export function ReportSubmissionForm() {
     <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Submission Successful!</AlertDialogTitle>
+          <AlertDialogTitle>Thank you for your submission.</AlertDialogTitle>
           <AlertDialogDescription>
-            Thank you for your courage and integrity. Your report has been submitted. Please save this unique ID to track the status of your report.
+            We will take action on your report. Please save this unique ID to track the status of your case.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="my-4 p-4 bg-secondary rounded-lg text-center font-mono text-lg font-semibold tracking-widest">
@@ -320,6 +323,10 @@ export function ReportSubmissionForm() {
         </div>
         <AlertDialogFooter>
           <Button variant="outline" onClick={copyToClipboard}>Copy ID</Button>
+          <Button variant="outline" onClick={downloadAsTxt}>
+            <Download className="mr-2 h-4 w-4" />
+            Download
+          </Button>
           <AlertDialogAction onClick={() => setShowSuccessDialog(false)}>Close</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
