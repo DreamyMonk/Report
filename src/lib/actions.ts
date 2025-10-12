@@ -1,7 +1,9 @@
 
 'use server';
 
-import 'dotenv/config';
+import { config } from 'dotenv';
+config(); // Load environment variables at the very top
+
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { serverTimestamp } from 'firebase-admin/firestore';
@@ -33,7 +35,10 @@ function generateReportId() {
 }
 
 export async function initializeData() {
-  if (!db) return;
+  if (!db) {
+    console.log("Database not ready, skipping initialization.");
+    return;
+  };
   
   const statusesRef = db.collection('statuses');
   const statusesSnapshot = await statusesRef.limit(1).get();
@@ -93,6 +98,7 @@ export async function submitReport(
   formData: FormData
 ): Promise<State> {
   if (!db) {
+    console.error('DATABASE NOT AVAILABLE IN SUBMIT REPORT');
     return {
       message: 'The server is not configured to handle submissions. Please contact support.',
       success: false,

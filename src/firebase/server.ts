@@ -1,4 +1,4 @@
-import 'dotenv/config';
+
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getAuth, Auth } from 'firebase-admin/auth';
@@ -8,9 +8,9 @@ let app: App;
 let db: Firestore;
 let auth: Auth;
 
-const serviceKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
 if (getApps().length === 0) {
+  const serviceKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
   if (serviceKey) {
     try {
       const serviceAcct = JSON.parse(Buffer.from(serviceKey, 'base64').toString('utf8'));
@@ -40,7 +40,6 @@ if (app) {
     // @ts-ignore
     auth = null;
 }
-
 
 // We export nullable versions for safer usage in the app
 export { db, auth };
