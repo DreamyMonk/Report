@@ -1,12 +1,12 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useEffect } from 'react';
+import { useFormStatus } from 'react-dom';
 import { createAdminUser } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -26,7 +26,7 @@ function SubmitButton() {
 }
 
 export default function SetupAdminPage() {
-  const [state, dispatch] = useFormState(createAdminUser, initialState);
+  const [state, dispatch] = useActionState(createAdminUser, initialState);
   const { toast } = useToast();
 
   useEffect(() => {
