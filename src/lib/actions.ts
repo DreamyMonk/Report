@@ -66,6 +66,11 @@ export async function inviteUser(prevState: any, formData: FormData) {
         } else {
             // Create new user
             const password = formData.get('password') as string;
+            
+            if (!password || password.length < 6) {
+                return { message: 'The password must be a string with at least 6 characters.', success: false };
+            }
+
             const userRecord = await auth.createUser({
                 email,
                 password,
@@ -194,5 +199,3 @@ export async function initializeData(db: Firestore) {
      console.log('Seeded default content.');
   }
 }
-
-    
