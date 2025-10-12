@@ -138,7 +138,7 @@ export function ReportSubmissionForm() {
         description: state.message,
       });
     }
-  }, [state, toast, form]);
+  }, [state, toast, form, categories]);
 
   const onSubmit = (data: ReportFormValues) => {
     const formData = new FormData();
@@ -268,14 +268,14 @@ export function ReportSubmissionForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {categories?.map(cat => (
+                  {categories?.map((cat) => (
                     <SelectItem key={cat.docId} value={cat.label}>{cat.label}</SelectItem>
                   ))}
                 </SelectContent>
