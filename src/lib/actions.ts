@@ -1,6 +1,7 @@
 
 'use server';
 
+import 'dotenv/config';
 import { getFirebaseAdmin } from '@/firebase/server';
 import { revalidatePath } from 'next/cache';
 
