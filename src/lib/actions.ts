@@ -5,9 +5,8 @@ import { classifyReportSeverity } from '@/ai/flows/classify-report-severity';
 import { summarizeReport } from '@/ai/flows/summarize-report-for-review';
 import { suggestInvestigationSteps } from '@/ai/flows/suggest-investigation-steps';
 import { revalidatePath } from 'next/cache';
-import { collection, addDoc, serverTimestamp } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
-import { db } from '@/firebase/server';
+import { serverTimestamp } from 'firebase-admin/firestore';
+import { db, auth } from '@/firebase/server';
 
 const ReportSchema = z
   .object({
@@ -74,6 +73,13 @@ export async function submitReport(
   prevState: State,
   formData: FormData
 ): Promise<State> {
+  if (!db) {
+     return {
+      message: 'The server is not configured to handle submissions. Please contact support.',
+      success: false,
+    };
+  }
+
   const validatedFields = ReportSchema.safeParse({
     title: formData.get('title'),
     category: formData.get('category'),
@@ -152,6 +158,13 @@ const CreateAdminSchema = z.object({
 });
 
 export async function createAdminUser(prevState: { message: string | null, success: boolean}, formData: FormData) {
+  if (!auth || !db) {
+    return {
+      message: 'The server is not configured for admin creation. Please set the FIREBASE_SERVICE_ACCOUNT_KEY.',
+      success: false,
+    };
+  }
+
   const validatedFields = CreateAdminSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
@@ -170,7 +183,6 @@ export async function createAdminUser(prevState: { message: string | null, succe
   const { email, password, name } = validatedFields.data;
 
   try {
-    const auth = getAuth();
     const userRecord = await auth.createUser({
       email,
       password,
