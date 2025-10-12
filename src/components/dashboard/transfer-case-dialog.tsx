@@ -74,8 +74,8 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
     
     if (searchTerm) {
         return filtered.filter(u => 
-            u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.email.toLowerCase().includes(searchTerm.toLowerCase())
+            (u.name && u.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }
     return filtered;

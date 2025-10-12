@@ -17,8 +17,6 @@ import { useMemo, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAuth } from "@/firebase/auth-provider";
-import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
 import { Checkbox } from "../ui/checkbox";
@@ -55,8 +53,8 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
   const filteredUsers = useMemo(() => {
       if (!users) return [];
       return users.filter(u => 
-          u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          u.email.toLowerCase().includes(searchTerm.toLowerCase())
+          (u.name && u.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase()))
       );
   }, [users, searchTerm]);
 
