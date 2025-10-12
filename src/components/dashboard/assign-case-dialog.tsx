@@ -30,7 +30,7 @@ interface AssignCaseDialogProps {
 
 export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialogProps) {
   const firestore = useFirestore();
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const usersQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'), where('role', 'in', ['admin', 'officer']));
@@ -47,10 +47,10 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
     } else {
       setSelectedUserIds([]);
     }
-  }, [report]);
+  }, [report, open]);
 
   const handleAssignCase = async () => {
-    if (!firestore || !report.docId || !user) {
+    if (!firestore || !report.docId || !user || !userData) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -77,14 +77,13 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
         status: 'In Progress'
       });
 
-      const currentUser = users?.find(u => u.id === user.uid);
       const assigneeNames = selectedUsers.map(u => u.name).join(', ');
 
       await addDoc(collection(firestore, 'audit_logs'), {
         reportId: report.docId,
         actor: {
           id: user.uid,
-          name: currentUser?.name || user.displayName || 'System'
+          name: userData.name || user.displayName || 'System'
         },
         action: `assigned the case to ${assigneeNames}`,
         timestamp: serverTimestamp()
@@ -133,16 +132,18 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
                             <CommandItem
                                 key={user.id}
                                 onSelect={() => toggleUserSelection(user.id)}
-                                className="flex items-center justify-between"
+                                className="cursor-pointer"
                             >
-                                <div className="flex items-center gap-2">
-                                    <Avatar className="h-6 w-6">
-                                        <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                        <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
-                                    </Avatar>
-                                    <span>{user.name || 'Unnamed User'} ({user.email})</span>
+                                <div className="flex items-center justify-between w-full">
+                                  <div className="flex items-center gap-2">
+                                      <Avatar className="h-6 w-6">
+                                          <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                          <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+                                      </Avatar>
+                                      <span>{user.name} ({user.email})</span>
+                                  </div>
+                                  <Check className={cn("h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
                                 </div>
-                                <Check className={cn("h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
                             </CommandItem>
                         )
                     })}
@@ -152,7 +153,7 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
         
         <div className="py-2">
           <p className="text-sm font-medium mb-2">Selected Officers:</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 min-h-[24px]">
             {users?.filter(u => selectedUserIds.includes(u.id)).map(u => (
               <Badge key={u.id} variant="secondary">{u.name}</Badge>
             ))}
