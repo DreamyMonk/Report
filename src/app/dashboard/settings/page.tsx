@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { useCollection, useFirestore } from "@/firebase";
 import { CaseStatus } from "@/lib/types";
-import { collection, query, orderBy, addDoc } from "firebase/firestore";
+import { collection, query, orderBy, addDoc, doc, deleteDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,17 @@ import { useToast } from "@/hooks/use-toast";
 import { HexColorPicker } from "react-colorful";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Category } from "@/lib/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { X } from "lucide-react";
 
 export default function SettingsPage() {
   const firestore = useFirestore();
@@ -22,7 +33,8 @@ export default function SettingsPage() {
   const [newCategoryLabel, setNewCategoryLabel] = useState('');
   const [isSubmittingStatus, setIsSubmittingStatus] = useState(false);
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
-  
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; label: string; type: 'status' | 'category' } | null>(null);
+
   const statusesQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'statuses'), orderBy('label'));
@@ -81,9 +93,33 @@ export default function SettingsPage() {
     } finally {
       setIsSubmittingCategory(false);
     }
-  }
+  };
+
+  const handleDelete = async () => {
+    if (!itemToDelete || !firestore) return;
+
+    const collectionName = itemToDelete.type === 'status' ? 'statuses' : 'categories';
+    
+    try {
+      await deleteDoc(doc(firestore, collectionName, itemToDelete.id));
+      toast({
+        title: `${itemToDelete.type.charAt(0).toUpperCase() + itemToDelete.type.slice(1)} Removed`,
+        description: `The ${itemToDelete.type} "${itemToDelete.label}" has been deleted.`,
+      });
+    } catch (error: any) {
+        toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || `Failed to remove ${itemToDelete.type}.`,
+      });
+    } finally {
+      setItemToDelete(null);
+    }
+  };
+
 
   return (
+    <>
     <div className="space-y-6">
       <h1 className="font-headline text-3xl font-bold tracking-tight">Settings</h1>
 
@@ -125,8 +161,11 @@ export default function SettingsPage() {
             <h3 className="font-medium mb-4">Current Statuses</h3>
             <div className="flex flex-wrap gap-2">
               {statuses?.map(status => (
-                <div key={status.docId} className="flex items-center gap-2 rounded-full border px-3 py-1 text-sm" style={{ backgroundColor: status.color, color: '#fff' }}>
-                  {status.label}
+                <div key={status.docId} className="flex items-center gap-2 rounded-full border pl-3 pr-1 py-1 text-sm text-white" style={{ backgroundColor: status.color }}>
+                  <span>{status.label}</span>
+                  <button onClick={() => setItemToDelete({ id: status.docId!, label: status.label, type: 'status' })} className="h-4 w-4 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/40">
+                    <X className="h-3 w-3" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -186,8 +225,11 @@ export default function SettingsPage() {
             <h3 className="font-medium mb-4">Current Categories</h3>
             <div className="flex flex-wrap gap-2">
               {categories?.map(category => (
-                <div key={category.docId} className="flex items-center gap-2 rounded-full border px-3 py-1 text-sm bg-secondary">
-                  {category.label}
+                <div key={category.docId} className="flex items-center gap-2 rounded-full border pl-3 pr-1 py-1 text-sm bg-secondary">
+                  <span>{category.label}</span>
+                  <button onClick={() => setItemToDelete({ id: category.docId!, label: category.label, type: 'category' })} className="h-4 w-4 rounded-full flex items-center justify-center bg-muted-foreground/20 hover:bg-muted-foreground/40 text-secondary-foreground">
+                    <X className="h-3 w-3" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -217,5 +259,22 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
     </div>
+    <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the {itemToDelete?.type} "{itemToDelete?.label}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
