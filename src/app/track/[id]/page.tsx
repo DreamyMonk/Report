@@ -237,15 +237,17 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                         <CardContent className="space-y-4">
                             {report.assignees && report.assignees.length > 0 ? (
                                 report.assignees.map(assignee => (
-                                    <div key={assignee.id} className="flex items-center space-x-3">
+                                    <div key={assignee.id} className="flex items-start space-x-4">
                                         <Avatar>
-                                            <AvatarImage src={assignee.avatarUrl} />
-                                            <AvatarFallback>{assignee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                            <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
+                                            <AvatarFallback>
+                                              {assignee.name ? assignee.name.split(' ').map(n => n[0]).join('') : (assignee.email ? assignee.email.charAt(0).toUpperCase() : 'U')}
+                                            </AvatarFallback>
                                         </Avatar>
                                         <div className="text-sm">
-                                            <p className="font-semibold">{assignee.name}</p>
-                                            {assignee.designation && <p className="text-xs text-muted-foreground flex items-center gap-1"><Briefcase className="h-3 w-3" /> {assignee.designation}</p>}
-                                            {assignee.department && <p className="text-xs text-muted-foreground flex items-center gap-1"><Building className="h-3 w-3" /> {assignee.department}</p>}
+                                            <p className="font-semibold">{assignee.name || assignee.email}</p>
+                                            {assignee.designation && <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Briefcase className="h-3 w-3" /> {assignee.designation}</p>}
+                                            {assignee.department && <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Building className="h-3 w-3" /> {assignee.department}</p>}
                                         </div>
                                     </div>
                                 ))
@@ -260,6 +262,8 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     </div>
   );
 }
+
+    
 
     
 
