@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -11,21 +12,26 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { HexColorPicker } from "react-colorful";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Paintbrush } from "lucide-react";
+import { Category } from "@/lib/types";
 
 export default function SettingsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [newStatusLabel, setNewStatusLabel] = useState('');
   const [newStatusColor, setNewStatusColor] = useState('#aabbcc');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newCategoryLabel, setNewCategoryLabel] = useState('');
+  const [isSubmittingStatus, setIsSubmittingStatus] = useState(false);
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   
   const statusesQuery = query(collection(firestore!, 'statuses'), orderBy('label'));
   const { data: statuses } = useCollection<CaseStatus>(statusesQuery, { listen: !!firestore });
 
+  const categoriesQuery = query(collection(firestore!, 'categories'), orderBy('label'));
+  const { data: categories } = useCollection<Category>(categoriesQuery, { listen: !!firestore });
+
   const handleAddStatus = async () => {
     if (!newStatusLabel.trim() || !firestore) return;
-    setIsSubmitting(true);
+    setIsSubmittingStatus(true);
     try {
       await addDoc(collection(firestore, 'statuses'), {
         label: newStatusLabel,
@@ -44,9 +50,32 @@ export default function SettingsPage() {
         description: error.message || "Failed to add new status.",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingStatus(false);
     }
   };
+
+  const handleAddCategory = async () => {
+    if (!newCategoryLabel.trim() || !firestore) return;
+    setIsSubmittingCategory(true);
+    try {
+      await addDoc(collection(firestore, 'categories'), {
+        label: newCategoryLabel
+      });
+      toast({
+        title: "Category Added",
+        description: `The category "${newCategoryLabel}" has been created.`,
+      });
+      setNewCategoryLabel('');
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to add new category.",
+      });
+    } finally {
+      setIsSubmittingCategory(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -56,7 +85,7 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Case Status Management</CardTitle>
           <CardDescription>
-            Add, edit, or remove custom case statuses for your workflow.
+            Add or remove custom case statuses for your workflow.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -104,8 +133,8 @@ export default function SettingsPage() {
                   </div>
               </div>
               <div className="self-end">
-                <Button onClick={handleAddStatus} disabled={isSubmitting || !newStatusLabel.trim()}>
-                  {isSubmitting ? 'Adding...' : 'Add Status'}
+                <Button onClick={handleAddStatus} disabled={isSubmittingStatus || !newStatusLabel.trim()}>
+                  {isSubmittingStatus ? 'Adding...' : 'Add Status'}
                 </Button>
               </div>
             </div>
@@ -115,15 +144,44 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>System Configuration</CardTitle>
+          <CardTitle>Category Management</CardTitle>
           <CardDescription>
-            This is a placeholder for future settings.
+            Add or remove report categories.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <p>
-            Future features like user management roles and notification settings will be configured here.
-          </p>
+        <CardContent className="space-y-6">
+           <div>
+            <h3 className="font-medium mb-4">Current Categories</h3>
+            <div className="flex flex-wrap gap-2">
+              {categories?.map(category => (
+                <div key={category.docId} className="flex items-center gap-2 rounded-full border px-3 py-1 text-sm bg-secondary">
+                  {category.label}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <Separator />
+
+          <div>
+            <h3 className="font-medium mb-4">Add New Category</h3>
+            <div className="flex items-center gap-4">
+              <div className="space-y-2 flex-grow">
+                <Label htmlFor="category-label">Category Label</Label>
+                <Input 
+                  id="category-label" 
+                  placeholder="e.g., 'Cybersecurity'"
+                  value={newCategoryLabel}
+                  onChange={(e) => setNewCategoryLabel(e.target.value)}
+                />
+              </div>
+              <div className="self-end">
+                 <Button onClick={handleAddCategory} disabled={isSubmittingCategory || !newCategoryLabel.trim()}>
+                  {isSubmittingCategory ? 'Adding...' : 'Add Category'}
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

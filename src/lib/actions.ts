@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -5,13 +6,13 @@ import { classifyReportSeverity } from '@/ai/flows/classify-report-severity';
 import { summarizeReport } from '@/ai/flows/summarize-report-for-review';
 import { suggestInvestigationSteps } from '@/ai/flows/suggest-investigation-steps';
 import { revalidatePath } from 'next/cache';
-import { serverTimestamp, FieldValue } from 'firebase-admin/firestore';
+import { serverTimestamp } from 'firebase-admin/firestore';
 import { db, auth } from '@/firebase/server';
 
 const ReportSchema = z
   .object({
     title: z.string().min(5, 'Title must be at least 5 characters long.'),
-    category: z.enum(['Financial', 'HR', 'Safety', 'Other']),
+    category: z.string({ required_error: 'Please select a category.' }),
     content: z
       .string()
       .min(20, 'Description must be at least 20 characters long.'),
@@ -69,27 +70,45 @@ function generateReportId() {
   return `${prefix}-${timestamp}-${randomPart}`.toUpperCase();
 }
 
-async function initializeDefaultStatuses() {
+async function initializeDefaultData() {
   if (!db) return;
   
   const statusesRef = db.collection('statuses');
-  const snapshot = await statusesRef.limit(1).get();
+  const statusesSnapshot = await statusesRef.limit(1).get();
 
-  if (snapshot.empty) {
-    const batch = db.batch();
+  if (statusesSnapshot.empty) {
+    const statusBatch = db.batch();
     const defaultStatuses = [
       { label: 'New', color: '#3b82f6' },
       { label: 'In Progress', color: '#f97316' },
-      { label: 'Resolved', color: '#22c55e' },
+      { label: 'Resolved', color: '#16a34a' },
       { label: 'Dismissed', color: '#64748b' },
-      { label: 'Forwarded to Upper Management', color: '#8b5cf6' },
+      { label: 'Forwarded', color: '#8b5cf6' },
     ];
     defaultStatuses.forEach(status => {
       const docRef = statusesRef.doc();
-      batch.set(docRef, status);
+      statusBatch.set(docRef, status);
     });
-    await batch.commit();
+    await statusBatch.commit();
     console.log('Default statuses initialized.');
+  }
+
+  const categoriesRef = db.collection('categories');
+  const categoriesSnapshot = await categoriesRef.limit(1).get();
+  if (categoriesSnapshot.empty) {
+    const categoryBatch = db.batch();
+    const defaultCategories = [
+      { label: 'Financial' },
+      { label: 'HR & Harassment' },
+      { label: 'Health & Safety' },
+      { label: 'Other' }
+    ];
+    defaultCategories.forEach(category => {
+      const docRef = categoriesRef.doc();
+      categoryBatch.set(docRef, category);
+    });
+    await categoryBatch.commit();
+    console.log('Default categories initialized.');
   }
 }
 
@@ -97,7 +116,7 @@ export async function submitReport(
   prevState: State,
   formData: FormData
 ): Promise<State> {
-  await initializeDefaultStatuses();
+  await initializeDefaultData();
 
   const validatedFields = ReportSchema.safeParse({
     title: formData.get('title'),
@@ -174,6 +193,7 @@ export async function submitReport(
     revalidatePath('/track');
     revalidatePath('/dashboard');
     revalidatePath('/dashboard/audit-log');
+    revalidatePath('/dashboard/settings');
 
     return {
       message: 'Your report has been submitted successfully.',

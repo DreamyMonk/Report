@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,10 +27,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Alert, AlertDescription } from "../ui/alert";
+import { useCollection, useFirestore } from "@/firebase";
+import { Category } from "@/lib/types";
+import { collection } from "firebase/firestore";
 
 const ReportSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
-  category: z.enum(["Financial", "HR", "Safety", "Other"], { required_error: "Please select a category." }),
+  category: z.string({ required_error: "Please select a category." }),
   content: z.string().min(20, "Description must be at least 20 characters long."),
   submissionType: z.enum(["anonymous", "confidential"]),
   name: z.string().optional(),
@@ -71,6 +75,13 @@ export function ReportSubmissionForm() {
   const { toast } = useToast();
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [generatedId, setGeneratedId] = useState<string | null>(null);
+  const firestore = useFirestore();
+
+  const categoriesQuery = useMemo(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'categories');
+  }, [firestore]);
+  const { data: categories } = useCollection<Category>(categoriesQuery);
 
 
   const form = useForm<ReportFormValues>({
@@ -253,10 +264,9 @@ export function ReportSubmissionForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="Financial">Financial Misconduct</SelectItem>
-                  <SelectItem value="HR">HR & Harassment</SelectItem>
-                  <SelectItem value="Safety">Health & Safety</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
+                  {categories?.map(cat => (
+                    <SelectItem key={cat.docId} value={cat.label}>{cat.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />

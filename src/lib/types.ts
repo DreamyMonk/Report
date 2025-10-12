@@ -1,3 +1,4 @@
+
 import { Timestamp } from "firebase/firestore";
 
 export type User = {
@@ -14,7 +15,7 @@ export type Report = {
   id: string;
   title: string;
   content: string;
-  category: "Financial" | "HR" | "Safety" | "Other";
+  category: string;
   submittedAt: Timestamp;
   status: string;
   severity: "Low" | "Medium" | "High";
@@ -58,4 +59,9 @@ export type AuditLog = {
     };
     action: string;
     timestamp: Timestamp;
+}
+
+export type Category = {
+    docId?: string;
+    label: string;
 }
