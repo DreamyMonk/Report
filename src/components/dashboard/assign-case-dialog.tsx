@@ -59,6 +59,7 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
   useEffect(() => {
     if (open) {
       if (mode === 'transfer' && report.assignees) {
+        // Pre-select current assignees when transferring
         setSelectedUserIds(report.assignees.map(a => a.id));
       } else {
         setSelectedUserIds([]);
@@ -74,8 +75,8 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
     
     let availableUsers = users;
 
-    // In add mode, filter out users who are already assigned
-    if (mode === 'add') {
+    // In add or transfer mode, filter out users who are already assigned
+    if (mode === 'add' || mode === 'transfer') {
         availableUsers = users.filter(u => !existingAssigneeIds.includes(u.id));
     }
     
@@ -120,18 +121,18 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
       
       if (mode === 'assign') {
         finalAssignees = newAssigneeData;
-        actionText = `assigned the case to ${finalAssignees.map(a => a.name).join(', ')}`;
+        actionText = `assigned the case to ${finalAssignees.map(a => a.name || a.email).join(', ')}`;
         await updateDoc(reportRef, { assignees: finalAssignees, status: 'In Progress' });
       } else if (mode === 'transfer') {
         finalAssignees = newAssigneeData;
-        actionText = `transferred the case to ${finalAssignees.map(a => a.name).join(', ')}`;
+        actionText = `transferred the case to ${finalAssignees.map(a => a.name || a.email).join(', ')}`;
         await updateDoc(reportRef, { assignees: finalAssignees });
       } else if (mode === 'add') {
         const existingAssignees = report.assignees || [];
         const existingIds = existingAssignees.map(a => a.id);
         const trulyNewAssignees = newAssigneeData.filter(a => !existingIds.includes(a.id));
         finalAssignees = [...existingAssignees, ...trulyNewAssignees];
-        actionText = `added ${trulyNewAssignees.map(a => a.name).join(', ')} to the case`;
+        actionText = `added ${trulyNewAssignees.map(a => a.name || a.email).join(', ')} to the case`;
         await updateDoc(reportRef, { assignees: finalAssignees });
       }
 
@@ -173,6 +174,9 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
      if(mode === 'add' && report.assignees) {
         return [...report.assignees, ...selection]
      }
+      if (mode === 'transfer') {
+        return selection;
+      }
      return selection;
   }, [users, selectedUserIds, mode, report.assignees]);
 
@@ -212,7 +216,7 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
                                 </Avatar>
                                 <div className="flex-grow">
                                     <p className="font-medium">{u.name || u.email}</p>
-                                    {u.name && <p className="text-xs text-muted-foreground">{u.email}</p>}
+                                    {u.name && u.email && <p className="text-xs text-muted-foreground">{u.email}</p>}
                                 </div>
                            </Label>
                         )
@@ -242,5 +246,3 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
     </Dialog>
   );
 }
-
-    
