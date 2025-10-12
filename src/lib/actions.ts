@@ -5,7 +5,8 @@ import { classifyReportSeverity } from '@/ai/flows/classify-report-severity';
 import { summarizeReport } from '@/ai/flows/summarize-report-for-review';
 import { suggestInvestigationSteps } from '@/ai/flows/suggest-investigation-steps';
 import { revalidatePath } from 'next/cache';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { db } from '@/firebase/server';
 
 const ReportSchema = z
@@ -106,7 +107,7 @@ export async function submitReport(
     
     const reportId = generateReportId();
 
-    await addDoc(collection(db, 'reports'), {
+    await db.collection('reports').add({
       id: reportId,
       title,
       content,
@@ -139,6 +140,65 @@ export async function submitReport(
     console.error(e);
     return {
       message: 'An unexpected error occurred. Please try again later.',
+      success: false,
+    };
+  }
+}
+
+const CreateAdminSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6, 'Password must be at least 6 characters.'),
+  name: z.string().min(1, 'Name is required.'),
+});
+
+export async function createAdminUser(prevState: { message: string | null, success: boolean}, formData: FormData) {
+  const validatedFields = CreateAdminSchema.safeParse({
+    email: formData.get('email'),
+    password: formData.get('password'),
+    name: formData.get('name'),
+  });
+
+  if (!validatedFields.success) {
+    const error = validatedFields.error.flatten().fieldErrors;
+    const message = Object.values(error).flat().join(', ');
+    return {
+      message: message || 'Invalid input.',
+      success: false,
+    };
+  }
+  
+  const { email, password, name } = validatedFields.data;
+
+  try {
+    const auth = getAuth();
+    const userRecord = await auth.createUser({
+      email,
+      password,
+      displayName: name,
+    });
+
+    await auth.setCustomUserClaims(userRecord.uid, { role: 'admin' });
+
+    const userRef = db.collection('users').doc(userRecord.uid);
+    await userRef.set({
+      id: userRecord.uid,
+      name,
+      email,
+      avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
+      role: 'admin',
+      createdAt: serverTimestamp(),
+    });
+
+    revalidatePath('/dashboard/users');
+
+    return {
+      message: `Admin user ${email} created successfully.`,
+      success: true,
+    };
+  } catch (error: any) {
+    console.error('Admin creation failed:', error);
+    return {
+      message: error.message || 'Failed to create admin user.',
       success: false,
     };
   }
