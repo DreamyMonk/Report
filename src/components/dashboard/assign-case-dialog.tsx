@@ -140,7 +140,7 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
                                         <AvatarImage src={user.avatarUrl} alt={user.name} />
                                         <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
                                     </Avatar>
-                                    <span>{user.name || 'Unnamed User'}</span>
+                                    <span>{user.name || 'Unnamed User'} ({user.email})</span>
                                 </div>
                                 <Check className={cn("h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
                             </CommandItem>
@@ -169,5 +169,3 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
     </Dialog>
   );
 }
-
-    
