@@ -302,11 +302,11 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
                         <div key={assignee.id} className="flex items-center space-x-4">
                             <Avatar>
                                 <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
-                                <AvatarFallback>{assignee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                <AvatarFallback>{assignee.name ? assignee.name.split(' ').map(n => n[0]).join('') : (assignee.email ? assignee.email.charAt(0).toUpperCase() : 'U')}</AvatarFallback>
                             </Avatar>
                             <div>
-                                <p className="text-sm font-medium leading-none">{assignee.name}</p>
-                                <p className="text-sm text-muted-foreground">{assignee.email}</p>
+                                <p className="text-sm font-medium leading-none">{assignee.name || assignee.email}</p>
+                                {assignee.name && <p className="text-sm text-muted-foreground">{assignee.email}</p>}
                             </div>
                         </div>
                     ))}
@@ -341,3 +341,5 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
     </div>
   );
 }
+
+    

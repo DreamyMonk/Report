@@ -70,7 +70,14 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
   const filteredUsers = useMemo(() => {
     if (!users) return [];
     
+    const existingAssigneeIds = report.assignees?.map(a => a.id) || [];
+    
     let availableUsers = users;
+
+    // In add mode, filter out users who are already assigned
+    if (mode === 'add') {
+        availableUsers = users.filter(u => !existingAssigneeIds.includes(u.id));
+    }
     
     if (searchTerm) {
         return availableUsers.filter(u => 
@@ -80,7 +87,7 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
     }
     return availableUsers;
 
-  }, [users, searchTerm]);
+  }, [users, searchTerm, mode, report.assignees]);
 
 
   const handleUpdateAssignees = async () => {
@@ -163,8 +170,11 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
 
   const finalSelection = useMemo(() => {
      let selection = users?.filter(u => selectedUserIds.includes(u.id)) || [];
+     if(mode === 'add' && report.assignees) {
+        return [...report.assignees, ...selection]
+     }
      return selection;
-  }, [users, selectedUserIds]);
+  }, [users, selectedUserIds, mode, report.assignees]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -216,7 +226,7 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
           <p className="text-sm font-medium mb-2">Final Assignees:</p>
           <div className="flex flex-wrap gap-2 min-h-[24px]">
             {finalSelection.map(u => (
-              <Badge key={u.id} variant="secondary">{u.name}</Badge>
+              <Badge key={u.id} variant="secondary">{u.name || u.email}</Badge>
             ))}
              {finalSelection.length === 0 && <p className="text-xs text-muted-foreground">No officers selected.</p>}
           </div>
