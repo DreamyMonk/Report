@@ -183,6 +183,7 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
             <ScrollArea className="h-[200px] border rounded-md p-2">
                 <div className="space-y-2">
                     {filteredUsers?.map(u => {
+                        if (!u.id) return null;
                         const isSelected = selectedUserIds.includes(u.id);
                         return (
                              <Label
@@ -197,11 +198,11 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
                                 />
                                 <Avatar className="h-8 w-8">
                                     <AvatarImage src={u.avatarUrl} alt={u.name} />
-                                    <AvatarFallback>{u.name ? u.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+                                    <AvatarFallback>{u.name ? u.name.charAt(0).toUpperCase() : u.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-grow">
-                                    <p className="font-medium">{u.name}</p>
-                                    <p className="text-xs text-muted-foreground">{u.email}</p>
+                                    <p className="font-medium">{u.name || u.email}</p>
+                                    {u.name && <p className="text-xs text-muted-foreground">{u.email}</p>}
                                 </div>
                            </Label>
                         )
@@ -231,3 +232,5 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
     </Dialog>
   );
 }
+
+    
