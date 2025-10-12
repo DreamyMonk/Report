@@ -66,7 +66,7 @@ export function InviteUserDialog({ open, onOpenChange }: InviteUserDialogProps) 
         <DialogHeader>
           <DialogTitle>Add a New User</DialogTitle>
           <DialogDescription>
-            Invite a new case officer or administrator to the platform. They will be sent an email to set up their account.
+            Create a new user account with an initial password. The user will be required to change their password upon first login.
           </DialogDescription>
         </DialogHeader>
 

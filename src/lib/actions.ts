@@ -32,6 +32,7 @@ export async function createAdminUser(prevState: any, formData: FormData) {
       role: 'admin',
       avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
       createdAt: new Date(),
+      requiresPasswordChange: true,
     });
     
     // Seed initial data
@@ -73,6 +74,7 @@ export async function inviteUser(prevState: any, formData: FormData) {
             department: department || null,
             avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
             createdAt: new Date(),
+            requiresPasswordChange: true,
         });
         
         revalidatePath('/dashboard/users');
@@ -82,6 +84,31 @@ export async function inviteUser(prevState: any, formData: FormData) {
         return { message: error.message || 'Failed to invite user.', success: false };
     }
 }
+
+export async function updatePassword(prevState: any, formData: FormData) {
+    try {
+        const password = formData.get('password') as string;
+        const uid = formData.get('uid') as string;
+
+        if (!auth || !db) {
+            throw new Error('Firebase admin not initialized');
+        }
+        
+        if (password.length < 6) {
+            throw new Error('Password must be at least 6 characters long.');
+        }
+
+        await auth.updateUser(uid, { password });
+        await db.collection('users').doc(uid).update({
+            requiresPasswordChange: false,
+        });
+
+        return { message: 'Password updated successfully.', success: true };
+    } catch (error: any) {
+        return { message: error.message || 'Failed to update password.', success: false };
+    }
+}
+
 
 export async function initializeData() {
   if (!db) {

@@ -22,8 +22,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/firebase/auth-provider";
+import { ForcePasswordChangeDialog } from "@/components/dashboard/force-password-change-dialog";
 
 const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
@@ -39,7 +41,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const { userData, user } = useAuth();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (userData?.requiresPasswordChange) {
+      setIsPasswordDialogOpen(true);
+    }
+  }, [userData]);
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -59,7 +69,7 @@ export default function DashboardLayout({
               <Logo className="h-6 w-6" />
               <span
                 className={cn(
-                  "transition-opacity",
+                  "transition-opacity whitespace-nowrap",
                   isCollapsed ? "opacity-0 w-0" : "opacity-100"
                 )}
               >
@@ -83,7 +93,7 @@ export default function DashboardLayout({
                     <item.icon className="h-5 w-5 shrink-0" />
                     <span
                       className={cn(
-                        "transition-opacity",
+                        "transition-opacity break-words",
                         isCollapsed ? "sr-only" : ""
                       )}
                     >
@@ -135,6 +145,13 @@ export default function DashboardLayout({
         </div>
       </div>
       <FirebaseErrorListener />
+      {user && (
+        <ForcePasswordChangeDialog 
+            open={isPasswordDialogOpen}
+            onOpenChange={setIsPasswordDialogOpen}
+            uid={user.uid}
+        />
+      )}
     </TooltipProvider>
   );
 }

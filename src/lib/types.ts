@@ -10,6 +10,7 @@ export type User = {
   role?: 'admin' | 'officer';
   designation?: string;
   department?: string;
+  requiresPasswordChange?: boolean;
 };
 
 export type Report = {
