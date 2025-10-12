@@ -83,17 +83,27 @@ export function InviteUserDialog({ open, onOpenChange }: InviteUserDialogProps) 
             <Label htmlFor="password">Initial Password</Label>
             <Input id="password" name="password" type="password" required />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Select name="role" required defaultValue="officer">
-              <SelectTrigger>
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="officer">Case Officer</SelectItem>
-                <SelectItem value="admin">Administrator</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select name="role" required defaultValue="officer">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="officer">Case Officer</SelectItem>
+                  <SelectItem value="admin">Administrator</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="designation">Designation</Label>
+              <Input id="designation" name="designation" placeholder="e.g. Lead Investigator" />
+            </div>
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="department">Department</Label>
+            <Input id="department" name="department" placeholder="e.g. Internal Affairs" />
           </div>
           <DialogFooter>
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>

@@ -8,6 +8,8 @@ export type User = {
   avatarUrl: string;
   email: string;
   role?: 'admin' | 'officer';
+  designation?: string;
+  department?: string;
 };
 
 export type Report = {
@@ -19,7 +21,7 @@ export type Report = {
   submittedAt: Timestamp;
   status: string;
   severity: "Low" | "Medium" | "High";
-  assignee: User | null;
+  assignees: User[] | null;
   submissionType: "anonymous" | "confidential";
   reporter?: {
     name?: string;

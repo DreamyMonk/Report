@@ -28,11 +28,8 @@ export default function Home() {
         </Link>
         <div className="flex items-center gap-2">
            <Button asChild>
-              <Link href="/track">Track a Report</Link>
+              <Link href="/view-case">View Case</Link>
             </Button>
-          <Button asChild variant="ghost">
-            <Link href="/login">Admin Login</Link>
-          </Button>
         </div>
       </header>
       <main className="flex-1 bg-secondary/50 py-12">

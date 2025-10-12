@@ -4,7 +4,7 @@ import { notFound, useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, User, Shield, Tag, FileText, Bot, Clock, AlertTriangle } from "lucide-react";
+import { Calendar, User, Shield, Tag, FileText, Bot, Clock, AlertTriangle, Users } from "lucide-react";
 import { format } from "date-fns";
 import { useCollection, useDoc, useFirestore } from "@/firebase";
 import { Report, SharedReport } from "@/lib/types";
@@ -151,19 +151,23 @@ export default function SharedReportPage({ params }: { params: { shareId: string
                     </Card>
                     <Card>
                         <CardHeader>
-                        <CardTitle>Assignee</CardTitle>
+                          <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Assignees</CardTitle>
                         </CardHeader>
                         <CardContent>
-                        {report.assignee ? (
-                            <div className="flex items-center space-x-4">
-                                <Avatar>
-                                    <AvatarImage src={report.assignee.avatarUrl} alt={report.assignee.name} />
-                                    <AvatarFallback>{report.assignee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="text-sm font-medium leading-none">{report.assignee.name}</p>
-                                    <p className="text-sm text-muted-foreground">{report.assignee.email}</p>
-                                </div>
+                        {report.assignees && report.assignees.length > 0 ? (
+                            <div className="space-y-4">
+                                {report.assignees.map(assignee => (
+                                    <div key={assignee.id} className="flex items-center space-x-4">
+                                        <Avatar>
+                                            <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
+                                            <AvatarFallback>{assignee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="text-sm font-medium leading-none">{assignee.name}</p>
+                                            <p className="text-sm text-muted-foreground">{assignee.email}</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         ) : (
                             <div className="text-sm text-muted-foreground">Unassigned</div>

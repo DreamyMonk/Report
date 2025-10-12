@@ -43,10 +43,13 @@ export default function UsersPage() {
                         <AvatarImage src={user.avatarUrl} alt={user.name} />
                         <AvatarFallback>{user.name ? user.name.split(' ').map(n => n[0]).join('') : 'U'}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1">
+                    <div className="flex-1 space-y-1">
                         <p className="font-semibold">{user.name}</p>
                         <p className="text-sm text-muted-foreground">{user.email}</p>
-                        <Badge variant="outline" className="capitalize mt-1">{user.role || 'User'}</Badge>
+                        <div className="flex gap-2 items-center">
+                            <Badge variant="outline" className="capitalize">{user.role || 'User'}</Badge>
+                        </div>
+                        {user.designation && <p className="text-xs text-muted-foreground">{user.designation}, {user.department}</p>}
                     </div>
                 </CardContent>
             </Card>

@@ -181,7 +181,7 @@ export async function submitReport(
       submissionType,
       reporter: {
         name: name || null,
-        email: email || null,
+        email: submissionType === 'anonymous' ? null : email || null,
         phone: phone || null,
       },
       submittedAt: serverTimestamp(),
@@ -191,7 +191,7 @@ export async function submitReport(
       aiRiskAssessment: summaryResult.riskAssessment,
       aiSuggestedSteps: stepsResult.suggestedSteps,
       aiReasoning: severityResult.reasoning,
-      assignee: null,
+      assignees: null,
     });
     
     // Add to audit log
@@ -228,6 +228,8 @@ const CreateUserSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters.'),
   name: z.string().min(1, 'Name is required.'),
   role: z.enum(['admin', 'officer']),
+  designation: z.string().optional(),
+  department: z.string().optional(),
 });
 
 type InviteUserState = {
@@ -242,6 +244,8 @@ export async function inviteUser(prevState: InviteUserState, formData: FormData)
     password: formData.get('password'),
     name: formData.get('name'),
     role: formData.get('role'),
+    designation: formData.get('designation'),
+    department: formData.get('department'),
   });
 
   if (!validatedFields.success) {
@@ -261,7 +265,7 @@ export async function inviteUser(prevState: InviteUserState, formData: FormData)
     };
   }
 
-  const { email, password, name, role } = validatedFields.data;
+  const { email, password, name, role, designation, department } = validatedFields.data;
 
   try {
     const userRecord = await auth.createUser({
@@ -279,6 +283,8 @@ export async function inviteUser(prevState: InviteUserState, formData: FormData)
       email,
       avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
       role,
+      designation: designation || null,
+      department: department || null,
       createdAt: serverTimestamp(),
     });
 

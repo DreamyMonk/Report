@@ -1,7 +1,8 @@
+
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Report, CaseStatus } from "@/lib/types";
+import { Report, CaseStatus, User } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,20 +50,21 @@ export const getColumns = (statuses: CaseStatus[]): ColumnDef<Report>[] => [
     },
   },
   {
-    accessorKey: "assignee",
-    header: "Assignee",
+    accessorKey: "assignees",
+    header: "Assignees",
     cell: ({ row }) => {
-      const assignee = row.getValue("assignee") as Report["assignee"];
-      if (!assignee) {
+      const assignees = row.getValue("assignees") as User[] | null;
+      if (!assignees || assignees.length === 0) {
         return <span className="text-muted-foreground">Unassigned</span>;
       }
       return (
-        <div className="flex items-center gap-2">
-          <Avatar className="h-6 w-6">
-            <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
-            <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <span className="text-sm">{assignee.name}</span>
+        <div className="flex -space-x-2">
+            {assignees.map((assignee) => (
+                <Avatar key={assignee.id} className="h-6 w-6 border-2 border-background">
+                    <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
+                    <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+            ))}
         </div>
       );
     },

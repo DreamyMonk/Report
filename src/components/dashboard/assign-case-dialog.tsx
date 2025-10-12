@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -14,9 +15,12 @@ import { useCollection, useFirestore } from "@/firebase";
 import { collection, query, where, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAuth } from "@/firebase/auth-provider";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "../ui/badge";
 
 interface AssignCaseDialogProps {
   open: boolean;
@@ -33,12 +37,12 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
   }, [firestore]);
 
   const { data: users } = useCollection<User>(usersQuery);
-  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(report.assignee?.id);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(report.assignees?.map(u => u.id) || []);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleAssignCase = async () => {
-    if (!firestore || !report.docId || !selectedUserId || !user) {
+    if (!firestore || !report.docId || !user) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -50,38 +54,37 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
     setIsLoading(true);
     
     try {
-      const selectedUser = users?.find(u => u.id === selectedUserId);
-      if (!selectedUser) {
-        throw new Error("Selected user not found");
-      }
+      const selectedUsers = users?.filter(u => selectedUserIds.includes(u.id)) || [];
       
       const reportRef = doc(firestore, 'reports', report.docId);
       
       await updateDoc(reportRef, {
-        assignee: {
-          id: selectedUser.id,
-          name: selectedUser.name,
-          email: selectedUser.email,
-          avatarUrl: selectedUser.avatarUrl,
-        },
+        assignees: selectedUsers.map(u => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          avatarUrl: u.avatarUrl,
+          designation: u.designation,
+          department: u.department,
+        })),
         status: 'In Progress'
       });
 
-      // Add to audit log
       const currentUser = users?.find(u => u.id === user.uid);
+      const assigneeNames = selectedUsers.map(u => u.name).join(', ');
       await addDoc(collection(firestore, 'audit_logs'), {
         reportId: report.docId,
         actor: {
           id: user.uid,
           name: currentUser?.name || user.displayName || 'System'
         },
-        action: `assigned the case to ${selectedUser.name}`,
+        action: `assigned the case to ${assigneeNames}`,
         timestamp: serverTimestamp()
       });
       
       toast({
-        title: "Case Assigned",
-        description: `Report has been assigned to ${selectedUser.name}.`,
+        title: "Case Updated",
+        description: `Report has been assigned to ${assigneeNames}.`,
       });
       onOpenChange(false);
     } catch (error: any) {
@@ -94,42 +97,64 @@ export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialo
         setIsLoading(false);
     }
   };
+  
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Assign Case</DialogTitle>
+          <DialogTitle>Assign / Transfer Case</DialogTitle>
           <DialogDescription>
-            Select a case officer to investigate this report. The status will be changed to 'In Progress'.
+            Select one or more case officers to investigate this report. The status will be changed to 'In Progress'.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-4">
-             <Select onValueChange={setSelectedUserId} defaultValue={selectedUserId}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select a case officer..." />
-                </SelectTrigger>
-                <SelectContent>
-                    {users?.map(user => (
-                         <SelectItem key={user.id} value={user.id}>
-                            <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                    <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <span>{user.name}</span>
-                            </div>
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+        <Command>
+            <CommandInput placeholder="Search for user..." />
+            <CommandList>
+                <CommandEmpty>No users found.</CommandEmpty>
+                <CommandGroup>
+                    {users?.map(user => {
+                        const isSelected = selectedUserIds.includes(user.id);
+                        return (
+                            <CommandItem
+                                key={user.id}
+                                onSelect={() => toggleUserSelection(user.id)}
+                                className="flex items-center justify-between"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Avatar className="h-6 w-6">
+                                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <span>{user.name}</span>
+                                </div>
+                                <Check className={cn("h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                            </CommandItem>
+                        )
+                    })}
+                </CommandGroup>
+            </CommandList>
+        </Command>
+        
+        <div className="py-2">
+          <p className="text-sm font-medium mb-2">Selected Officers:</p>
+          <div className="flex flex-wrap gap-2">
+            {users?.filter(u => selectedUserIds.includes(u.id)).map(u => (
+              <Badge key={u.id} variant="secondary">{u.name}</Badge>
+            ))}
+          </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleAssignCase} disabled={isLoading || !selectedUserId}>
-            {isLoading ? "Assigning..." : "Assign Case"}
+          <Button onClick={handleAssignCase} disabled={isLoading || selectedUserIds.length === 0}>
+            {isLoading ? "Updating..." : report.assignees ? "Update Assignees" : "Assign Case"}
           </Button>
         </DialogFooter>
       </DialogContent>

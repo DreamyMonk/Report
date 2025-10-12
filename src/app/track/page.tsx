@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -40,7 +41,7 @@ export default function TrackReportPage() {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        router.push(`/track/${reportId.toUpperCase()}`);
+        router.push(`/view-case/${reportId.toUpperCase()}`);
       } else {
         toast({
           variant: 'destructive',
@@ -68,7 +69,7 @@ export default function TrackReportPage() {
             <Logo className="h-8 w-8 text-primary" />
             <span className="font-headline text-2xl font-bold">Whistleblower Management Portal</span>
           </Link>
-          <h1 className="text-2xl font-bold">Track Your Report</h1>
+          <h1 className="text-2xl font-bold">View Your Case</h1>
           <p className="text-muted-foreground text-center">Enter the unique ID you received upon submission.</p>
         </div>
         <form onSubmit={handleTrackReport}>
@@ -88,7 +89,7 @@ export default function TrackReportPage() {
             </CardContent>
             <CardFooter>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Searching...' : 'Track Status'}
+                {isLoading ? 'Searching...' : 'View Case Status'}
               </Button>
             </CardFooter>
           </Card>

@@ -1,3 +1,4 @@
+
 'use client'
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUp, Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, FolderUp, Landmark } from "lucide-react";
+import { FileUp, Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, Landmark, Building, Briefcase } from "lucide-react";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -150,11 +151,11 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                                     ) : (
                                       <div key={msg.docId} className="flex items-start gap-3">
                                           <Avatar className="h-8 w-8">
-                                              <AvatarImage src={report.assignee?.avatarUrl} />
-                                              <AvatarFallback>{report.assignee?.name.charAt(0)}</AvatarFallback>
+                                              <AvatarImage src={msg.senderInfo?.avatarUrl} />
+                                              <AvatarFallback>{msg.senderInfo?.name?.charAt(0)}</AvatarFallback>
                                           </Avatar>
                                           <div className="p-3 rounded-lg bg-secondary max-w-[80%]">
-                                              <p className="text-sm font-semibold">{report.assignee?.name}</p>
+                                              <p className="text-sm font-semibold">{msg.senderInfo?.name}</p>
                                               <p className="text-sm">{msg.content}</p>
                                               <p className="text-xs text-muted-foreground text-right mt-1">{msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : '...'}</p>
                                           </div>
@@ -199,20 +200,23 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                     </Card>
                     <Card>
                         <CardHeader>
-                            <CardTitle>Assigned Case Officer</CardTitle>
+                            <CardTitle>Assigned Case Officers</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            {report.assignee ? (
-                                <div className="flex items-center space-x-3">
-                                    <Avatar>
-                                        <AvatarImage src={report.assignee.avatarUrl} />
-                                        <AvatarFallback>{report.assignee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="font-semibold">{report.assignee.name}</p>
-                                        <p className="text-xs text-muted-foreground">Case Officer</p>
+                        <CardContent className="space-y-4">
+                            {report.assignees && report.assignees.length > 0 ? (
+                                report.assignees.map(assignee => (
+                                    <div key={assignee.id} className="flex items-center space-x-3">
+                                        <Avatar>
+                                            <AvatarImage src={assignee.avatarUrl} />
+                                            <AvatarFallback>{assignee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="text-sm">
+                                            <p className="font-semibold">{assignee.name}</p>
+                                            {assignee.designation && <p className="text-xs text-muted-foreground flex items-center gap-1"><Briefcase className="h-3 w-3" /> {assignee.designation}</p>}
+                                            {assignee.department && <p className="text-xs text-muted-foreground flex items-center gap-1"><Building className="h-3 w-3" /> {assignee.department}</p>}
+                                        </div>
                                     </div>
-                                </div>
+                                ))
                             ) : (
                                 <p className="text-sm text-muted-foreground">Pending assignment</p>
                             )}
