@@ -6,10 +6,15 @@ import { User } from "@/lib/types";
 import { collection, query } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { PlusCircle } from "lucide-react";
+import { InviteUserDialog } from "@/components/dashboard/invite-user-dialog";
 
 export default function UsersPage() {
   const firestore = useFirestore();
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+
   const usersQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'));
@@ -18,7 +23,13 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-headline text-3xl font-bold tracking-tight">User Management</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="font-headline text-3xl font-bold tracking-tight">User Management</h1>
+        <Button onClick={() => setIsInviteDialogOpen(true)}>
+          <PlusCircle className="mr-2" />
+          Add User
+        </Button>
+      </div>
        <Card>
         <CardHeader>
           <CardTitle>Case Officers & Admins</CardTitle>
@@ -42,6 +53,7 @@ export default function UsersPage() {
           ))}
         </CardContent>
       </Card>
+      <InviteUserDialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen} />
     </div>
   )
 }

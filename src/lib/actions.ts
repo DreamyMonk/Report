@@ -223,18 +223,25 @@ export async function submitReport(
   }
 }
 
-const CreateAdminSchema = z.object({
+const CreateUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
   name: z.string().min(1, 'Name is required.'),
+  role: z.enum(['admin', 'officer']),
 });
 
-export async function createAdminUser(prevState: { message: string | null, success: boolean}, formData: FormData) {
+type InviteUserState = {
+  message: string | null;
+  success: boolean;
+};
 
-  const validatedFields = CreateAdminSchema.safeParse({
+
+export async function inviteUser(prevState: InviteUserState, formData: FormData) {
+  const validatedFields = CreateUserSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
     name: formData.get('name'),
+    role: formData.get('role'),
   });
 
   if (!validatedFields.success) {
@@ -245,18 +252,16 @@ export async function createAdminUser(prevState: { message: string | null, succe
       success: false,
     };
   }
-  
-    if (!auth || !db) {
-    console.warn('Firebase Auth or Firestore is not available. Skipping admin creation.');
-    // Return a success message to the user, but log a warning to the console.
-    // This allows the UI to proceed as if the user was created, for dev purposes.
-     return {
-      message: 'Admin user created successfully (local development).',
-      success: true,
+
+  if (!auth || !db) {
+    console.warn('Firebase Auth or Firestore is not available. Skipping user creation.');
+    return {
+      message: 'The server is not configured to handle user creation. Please contact support.',
+      success: false,
     };
   }
-  
-  const { email, password, name } = validatedFields.data;
+
+  const { email, password, name, role } = validatedFields.data;
 
   try {
     const userRecord = await auth.createUser({
@@ -265,7 +270,7 @@ export async function createAdminUser(prevState: { message: string | null, succe
       displayName: name,
     });
 
-    await auth.setCustomUserClaims(userRecord.uid, { role: 'admin' });
+    await auth.setCustomUserClaims(userRecord.uid, { role });
 
     const userRef = db.collection('users').doc(userRecord.uid);
     await userRef.set({
@@ -273,21 +278,31 @@ export async function createAdminUser(prevState: { message: string | null, succe
       name,
       email,
       avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
-      role: 'admin',
+      role,
       createdAt: serverTimestamp(),
     });
 
     revalidatePath('/dashboard/users');
 
     return {
-      message: `Admin user ${email} created successfully.`,
+      message: `User ${email} created successfully with role: ${role}.`,
       success: true,
     };
   } catch (error: any) {
-    console.error('Admin creation failed:', error);
+    console.error('User creation failed:', error);
     return {
-      message: error.message || 'Failed to create admin user.',
+      message: error.message || 'Failed to create user.',
       success: false,
     };
   }
+}
+
+
+export async function createAdminUser(prevState: { message: string | null, success: boolean}, formData: FormData) {
+  const adminData = new FormData();
+  adminData.append('email', formData.get('email') as string);
+  adminData.append('password', formData.get('password') as string);
+  adminData.append('name', formData.get('name') as string);
+  adminData.append('role', 'admin');
+  return inviteUser(prevState, adminData);
 }

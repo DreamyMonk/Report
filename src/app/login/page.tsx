@@ -10,7 +10,7 @@ export default function LoginPage() {
           <Link href="/" className="mb-4 flex items-center gap-2">
             <Logo className="h-8 w-8 text-primary" />
           </Link>
-          <h1 className="font-headline text-3xl font-bold">Admin Portal</h1>
+          <h1 className="font-headline text-3xl font-bold">Case Portal</h1>
           <p className="text-muted-foreground">Sign in to manage reports</p>
         </div>
         <LoginForm />
