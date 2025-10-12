@@ -67,10 +67,6 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
     if (!users) return [];
     
     let filtered = users;
-    if (mode === 'add') {
-        const currentAssigneeIds = report.assignees?.map(a => a.id) || [];
-        filtered = users.filter(u => !currentAssigneeIds.includes(u.id));
-    }
     
     if (searchTerm) {
         return filtered.filter(u => 
@@ -80,7 +76,7 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
     }
     return filtered;
 
-  }, [users, report, mode, searchTerm]);
+  }, [users, searchTerm]);
 
 
   const handleUpdateAssignees = async () => {
@@ -150,6 +146,10 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
   };
   
   const toggleUserSelection = (userId: string) => {
+    if (mode === 'add' && report.assignees?.some(a => a.id === userId)) {
+        return; // Don't allow de-selecting already assigned users in 'add' mode
+    }
+
     setSelectedUserIds(prev => 
       prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
     );
@@ -177,7 +177,11 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
                 <div className="space-y-2">
                     {availableUsers?.map(user => {
                         const isSelected = selectedUserIds.includes(user.id);
-                        const isAlreadyAssigned = mode === 'add' && (report.assignees?.some(a => a.id === user.id));
+                        const isAlreadyAssigned = report.assignees?.some(a => a.id === user.id);
+
+                        if (mode === 'add' && isAlreadyAssigned) {
+                          return null; // Don't show already assigned users in the selection list for 'add' mode
+                        }
 
                         return (
                              <Label
@@ -187,7 +191,6 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
                                 <Checkbox
                                     checked={isSelected}
                                     onCheckedChange={() => toggleUserSelection(user.id)}
-                                    disabled={isAlreadyAssigned}
                                 />
                                 <Avatar className="h-8 w-8">
                                     <AvatarImage src={user.avatarUrl} alt={user.name} />
@@ -200,7 +203,7 @@ export function TransferCaseDialog({ open, onOpenChange, report, mode }: Transfe
                            </Label>
                         )
                     })}
-                     {availableUsers.length === 0 && <p className="text-center text-sm text-muted-foreground py-4">No users found.</p>}
+                     {availableUsers.length === 0 && <p className="text-center text-sm text-muted-foreground py-4">No available users found.</p>}
                 </div>
             </ScrollArea>
         </div>
