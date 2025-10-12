@@ -2,20 +2,25 @@
 import { OverviewCards } from "@/components/dashboard/overview-cards";
 import { ReportsTable } from "@/components/dashboard/reports-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCollection } from "@/firebase";
+import { useCollection, useFirestore } from "@/firebase";
 import { Report } from "@/lib/types";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
+import { useMemo } from "react";
 
 export default function DashboardPage() {
-  const { data: reports, firestore } = useCollection<Report>(
-    firestore ? query(
+  const firestore = useFirestore();
+  const reportsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(
       collection(firestore, 'reports'),
       where('severity', '==', 'High'),
       where('status', '==', 'New'),
       orderBy('submittedAt', 'desc'),
       limit(5)
-    ) : null
-  );
+    );
+  }, [firestore]);
+
+  const { data: reports } = useCollection<Report>(reportsQuery);
 
   return (
     <div className="space-y-6">

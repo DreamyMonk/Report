@@ -1,15 +1,19 @@
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCollection } from "@/firebase";
+import { useCollection, useFirestore } from "@/firebase";
 import { User } from "@/lib/types";
 import { collection, query } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useMemo } from "react";
 
 export default function UsersPage() {
-  const { data: users, firestore } = useCollection<User>(
-    firestore ? query(collection(firestore, 'users')) : null
-  );
+  const firestore = useFirestore();
+  const usersQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'users'));
+  }, [firestore]);
+  const { data: users } = useCollection<User>(usersQuery);
 
   return (
     <div className="space-y-6">

@@ -9,18 +9,22 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock } from "lucide-react";
 import { format } from "date-fns";
-import { useDoc } from "@/firebase";
+import { useDoc, useFirestore } from "@/firebase";
 import { Report } from "@/lib/types";
 import { doc } from "firebase/firestore";
 import { AssignCaseDialog } from "@/components/dashboard/assign-case-dialog";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const firestore = useFirestore();
+
+  const reportRef = useMemo(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'reports', params.id);
+  }, [firestore, params.id]);
   
-  const { data: report, firestore, loading } = useDoc<Report>(
-    firestore ? doc(firestore, 'reports', params.id) : null
-  );
+  const { data: report, loading } = useDoc<Report>(reportRef);
 
   if (loading) {
     return <div>Loading...</div>

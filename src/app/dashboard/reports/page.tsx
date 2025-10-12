@@ -1,14 +1,19 @@
 'use client';
 import { ReportsTable } from "@/components/dashboard/reports-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCollection } from "@/firebase";
+import { useCollection, useFirestore } from "@/firebase";
 import { Report } from "@/lib/types";
 import { collection, query, orderBy } from "firebase/firestore";
+import { useMemo } from "react";
 
 export default function AllReportsPage() {
-  const { data: reports, firestore } = useCollection<Report>(
-    firestore ? query(collection(firestore, 'reports'), orderBy('submittedAt', 'desc')) : null
-  );
+  const firestore = useFirestore();
+  const reportsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'reports'), orderBy('submittedAt', 'desc'));
+  }, [firestore]);
+  
+  const { data: reports } = useCollection<Report>(reportsQuery);
 
   return (
     <div className="space-y-6">

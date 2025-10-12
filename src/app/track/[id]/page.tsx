@@ -9,7 +9,7 @@ import { FileUp, Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, 
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useCollection, useDoc } from "@/firebase";
+import { useCollection, useFirestore } from "@/firebase";
 import { Report, Message } from "@/lib/types";
 import { collection, doc, query, where, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 import { useState, useMemo } from "react";
@@ -18,16 +18,23 @@ import { useToast } from "@/hooks/use-toast";
 export default function TrackReportDetailPage({ params }: { params: { id: string } }) {
   const [message, setMessage] = useState('');
   const { toast } = useToast();
+  const firestore = useFirestore();
 
-  const { data: reports, firestore, loading: reportsLoading } = useCollection<Report>(
-    firestore ? query(collection(firestore, 'reports'), where('id', '==', params.id.toUpperCase())) : null
-  );
+  const reportsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'reports'), where('id', '==', params.id.toUpperCase()));
+  }, [firestore, params.id]);
+
+  const { data: reports, loading: reportsLoading } = useCollection<Report>(reportsQuery);
   
   const report = useMemo(() => reports?.[0], [reports]);
 
-  const { data: messages, loading: messagesLoading } = useCollection<Message>(
-    firestore && report ? query(collection(firestore, 'reports', report.docId!, 'messages'), orderBy('sentAt', 'asc')) : null
-  );
+  const messagesQuery = useMemo(() => {
+    if (!firestore || !report) return null;
+    return query(collection(firestore, 'reports', report.docId!, 'messages'), orderBy('sentAt', 'asc'));
+  }, [firestore, report]);
+
+  const { data: messages, loading: messagesLoading } = useCollection<Message>(messagesQuery);
 
   const handleSendMessage = async () => {
     if (!message.trim() || !firestore || !report) return;

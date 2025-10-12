@@ -1,14 +1,19 @@
 'use client';
-import { useCollection } from "@/firebase";
+import { useCollection, useFirestore } from "@/firebase";
 import { Report } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, AlertCircle, Hourglass, CheckCircle } from "lucide-react";
 import { collection, query } from "firebase/firestore";
+import { useMemo } from "react";
 
 export function OverviewCards() {
-  const { data: reports, firestore } = useCollection<Report>(
-    firestore ? query(collection(firestore, 'reports')) : null
-  );
+  const firestore = useFirestore();
+  const reportsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'reports'));
+  }, [firestore]);
+
+  const { data: reports } = useCollection<Report>(reportsQuery);
 
   const totalReports = reports?.length || 0;
   const newReports = reports?.filter(r => r.status === "New").length || 0;

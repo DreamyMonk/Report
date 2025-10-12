@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Report, User } from "@/lib/types";
-import { useCollection } from "@/firebase";
+import { useCollection, useFirestore } from "@/firebase";
 import { collection, query, where, doc, updateDoc } from "firebase/firestore";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -24,9 +24,13 @@ interface AssignCaseDialogProps {
 }
 
 export function AssignCaseDialog({ open, onOpenChange, report }: AssignCaseDialogProps) {
-  const { data: users, firestore } = useCollection<User>(
-    firestore ? query(collection(firestore, 'users'), where('role', 'in', ['admin', 'officer'])) : null
-  );
+  const firestore = useFirestore();
+  const usersQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'users'), where('role', 'in', ['admin', 'officer']));
+  }, [firestore]);
+
+  const { data: users } = useCollection<User>(usersQuery);
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>(report.assignee?.id);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
