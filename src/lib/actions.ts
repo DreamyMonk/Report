@@ -112,6 +112,20 @@ async function initializeDefaultData() {
     await categoryBatch.commit();
     console.log('Default categories initialized.');
   }
+
+  const contentRef = db.collection('content');
+  const contentSnapshot = await contentRef.limit(1).get();
+  if (contentSnapshot.empty) {
+      await contentRef.doc('siteCopy').set({
+          submissionGuidelines: `
+- **Be Specific:** Include dates, times, locations, and the names of people involved.
+- **Provide Evidence:** If you have documents, photos, or other evidence, please mention them in your report. You will be able to attach files after submission.
+- **Describe the Impact:** Explain how the issue is affecting the company, its employees, or the public.
+- **Stay Factual:** Stick to what you know and have witnessed. Avoid speculation or rumors.
+          `
+      });
+      console.log("Default content initialized.");
+  }
 }
 
 export async function submitReport(

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { useCollection, useDoc, useFirestore } from "@/firebase";
 import { Report, Message, User as AppUser, CaseStatus } from "@/lib/types";
@@ -18,10 +18,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { ShareReportDialog } from "@/components/dashboard/share-report-dialog";
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [message, setMessage] = useState('');
   const firestore = useFirestore();
   const { userData, user } = useAuth();
@@ -130,16 +132,22 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Badge variant={report.severity === 'High' ? 'destructive' : report.severity === 'Medium' ? 'secondary' : 'default'} className="capitalize">{report.severity} Severity</Badge>
-           <Badge variant="outline" className="capitalize flex items-center gap-1">
-              {isConfidential ? <Lock className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-              {report.submissionType}
-           </Badge>
+      <div className="flex justify-between items-start">
+        <div>
+            <div className="flex items-center gap-2 mb-2">
+            <Badge variant={report.severity === 'High' ? 'destructive' : report.severity === 'Medium' ? 'secondary' : 'default'} className="capitalize">{report.severity} Severity</Badge>
+            <Badge variant="outline" className="capitalize flex items-center gap-1">
+                {isConfidential ? <Lock className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                {report.submissionType}
+            </Badge>
+            </div>
+            <h1 className="font-headline text-4xl font-bold">{report.title}</h1>
         </div>
-        <h1 className="font-headline text-4xl font-bold">{report.title}</h1>
+        <Button variant="outline" onClick={() => setIsShareDialogOpen(true)}>
+            <Share2 className="mr-2 h-4 w-4" /> Share
+        </Button>
       </div>
+
 
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
@@ -345,6 +353,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
         </div>
       </div>
       <AssignCaseDialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} report={report} />
+      <ShareReportDialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} reportId={report.docId!} />
     </div>
   );
 }

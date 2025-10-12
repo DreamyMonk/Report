@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileUp, Info } from "lucide-react";
+import { Loader2, FileUp } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -26,7 +26,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Alert, AlertDescription } from "../ui/alert";
 import { useCollection, useFirestore } from "@/firebase";
 import { Category } from "@/lib/types";
 import { collection } from "firebase/firestore";
@@ -48,7 +47,7 @@ const ReportSchema = z.object({
   message: "A valid email is required for confidential submissions.",
   path: ["email"],
 }).refine(data => {
-  if (data.submissionType === 'anonymous' && data.email) {
+  if (data.submissionType === 'anonymous' && data.email && data.email.length > 0) {
      return z.string().email().safeParse(data.email).success;
   }
   return true;
@@ -130,21 +129,14 @@ export function ReportSubmissionForm() {
     <Form {...form}>
       <form
         action={(formData) => {
-          const valid = form.trigger();
-          if (valid) {
-            dispatch(formData);
-          }
+          form.trigger().then((valid) => {
+             if (valid) {
+                dispatch(formData);
+             }
+          });
         }}
         className="space-y-6"
       >
-
-        <Alert variant="default" className="border-blue-500/50 text-blue-900 dark:text-blue-200 [&>svg]:text-blue-600 dark:[&>svg]:text-blue-400">
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-                We do not track your IP address. If you choose "Confidential", your details will only be visible to the assigned case officer.
-            </AlertDescription>
-        </Alert>
-
         <FormField
           control={form.control}
           name="submissionType"

@@ -66,3 +66,15 @@ export type Category = {
     docId?: string;
     label: string;
 }
+
+export type SharedReport = {
+    docId?: string;
+    id: string;
+    reportId: string;
+    expiresAt: Timestamp;
+}
+
+export type AppContent = {
+    docId?: string;
+    submissionGuidelines: string;
+}
