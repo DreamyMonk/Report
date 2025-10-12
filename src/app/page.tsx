@@ -57,7 +57,7 @@ export default function Home() {
                  <Alert variant="default" className="border-blue-500/50 text-blue-900 dark:text-blue-200 [&>svg]:text-blue-600 dark:[&>svg]:text-blue-400">
                     <Info className="h-4 w-4" />
                     <AlertDescription>
-                        We do not track your IP address. If you choose "Confidential", your details will only be visible to the assigned case officer. For anonymous reports, you can optionally provide an email for updates without revealing your identity.
+                        This form does not collect your IP address, If you choose "Confidential", your details will only be visible to the assigned case officer(s). To maintain full anonymity, avoid including details in your report that could inadvertently identify you.
                     </AlertDescription>
                 </Alert>
             </div>
