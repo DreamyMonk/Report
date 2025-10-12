@@ -9,43 +9,6 @@ import { revalidatePath } from 'next/cache';
 import { serverTimestamp } from 'firebase-admin/firestore';
 import { db, auth } from '@/firebase/server';
 
-const ReportSchema = z
-  .object({
-    title: z.string().min(5, 'Title must be at least 5 characters long.'),
-    category: z.string({ required_error: 'Please select a category.' }).min(1, 'Please select a category.'),
-    content: z
-      .string()
-      .min(20, 'Description must be at least 20 characters long.'),
-    submissionType: z.enum(['anonymous', 'confidential']),
-    name: z.string().optional(),
-    email: z.string().optional(),
-    phone: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.submissionType === 'confidential') {
-        return !!data.name && data.name.length > 0;
-      }
-      return true;
-    },
-    {
-      message: 'Name is required for confidential submissions.',
-      path: ['name'],
-    }
-  )
-  .refine(
-    (data) => {
-      if (data.email && data.email.length > 0) {
-        return z.string().email().safeParse(data.email).success;
-      }
-      return true;
-    },
-    {
-      message: 'Please enter a valid email address.',
-      path: ['email'],
-    }
-  );
-
 type State = {
   errors?: {
     title?: string[];
@@ -128,24 +91,6 @@ export async function submitReport(
   prevState: State,
   formData: FormData
 ): Promise<State> {
-  const validatedFields = ReportSchema.safeParse({
-    title: formData.get('title'),
-    category: formData.get('category'),
-    content: formData.get('content'),
-    submissionType: formData.get('submissionType'),
-    name: formData.get('name'),
-    email: formData.get('email'),
-    phone: formData.get('phone'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Validation failed. Please check your input.',
-      success: false,
-    };
-  }
-  
     if (!db) {
      console.warn('Firestore is not available. Skipping report creation.');
      return {
@@ -154,9 +99,13 @@ export async function submitReport(
     };
   }
 
-
-  const { title, content, category, submissionType, name, email, phone } =
-    validatedFields.data;
+  const title = formData.get('title') as string;
+  const content = formData.get('content') as string;
+  const category = formData.get('category') as string;
+  const submissionType = formData.get('submissionType') as 'anonymous' | 'confidential';
+  const name = formData.get('name') as string | undefined;
+  const email = formData.get('email') as string | undefined;
+  const phone = formData.get('phone') as string | undefined;
 
   try {
     const [severityResult, summaryResult] = await Promise.all([
@@ -310,3 +259,5 @@ export async function createAdminUser(prevState: { message: string | null, succe
   adminData.append('role', 'admin');
   return inviteUser(prevState, adminData);
 }
+
+    

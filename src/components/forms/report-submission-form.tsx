@@ -3,8 +3,6 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { submitReport } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,37 +28,6 @@ import { Category } from "@/lib/types";
 import { collection } from "firebase/firestore";
 import { useFormStatus } from "react-dom";
 
-const ReportSchema = z.object({
-  title: z.string().min(5, "Title must be at least 5 characters long."),
-  category: z.string({ required_error: "Please select a category." }).min(1, "Please select a category."),
-  content: z.string().min(20, "Description must be at least 20 characters long."),
-  submissionType: z.enum(["anonymous", "confidential"]),
-  name: z.string().optional(),
-  email: z.string().optional(),
-  phone: z.string().optional(),
-}).refine(data => {
-  if (data.submissionType === 'confidential') {
-    return !!data.name && data.name.length > 0;
-  }
-  return true;
-}, {
-  message: "Name is required for confidential submissions.",
-  path: ["name"],
-}).refine(data => {
-  if (data.email && data.email.length > 0) {
-     return z.string().email().safeParse(data.email).success;
-  }
-  return true;
-},
-{
-  message: "Please enter a valid email address.",
-  path: ["email"],
-});
-
-
-type ReportFormValues = z.infer<typeof ReportSchema>;
-
-
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
@@ -85,12 +52,11 @@ export function ReportSubmissionForm() {
   const { data: categories } = useCollection<Category>(categoriesQuery);
 
 
-  const form = useForm<ReportFormValues>({
-    resolver: zodResolver(ReportSchema),
+  const form = useForm({
     mode: 'onChange',
     defaultValues: {
       title: "",
-      category: undefined,
+      category: "",
       content: "",
       submissionType: "anonymous",
       name: "",
@@ -138,9 +104,9 @@ export function ReportSubmissionForm() {
         description: state.message,
       });
     }
-  }, [state, toast, form, categories]);
+  }, [state, toast, form]);
 
-  const onSubmit = (data: ReportFormValues) => {
+  const onSubmit = (data: any) => {
     const formData = new FormData();
     Object.entries(data).forEach(([key, value]) => {
       if (value) {
@@ -210,7 +176,7 @@ export function ReportSubmissionForm() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name (Required)</FormLabel>
+                      <FormLabel>Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Your Name" {...field} />
                       </FormControl>
