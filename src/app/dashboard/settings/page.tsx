@@ -8,7 +8,7 @@ import { collection, query, orderBy, addDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { HexColorPicker } from "react-colorful";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -23,11 +23,17 @@ export default function SettingsPage() {
   const [isSubmittingStatus, setIsSubmittingStatus] = useState(false);
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   
-  const statusesQuery = query(collection(firestore!, 'statuses'), orderBy('label'));
-  const { data: statuses } = useCollection<CaseStatus>(statusesQuery, { listen: !!firestore });
+  const statusesQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'statuses'), orderBy('label'));
+  }, [firestore]);
+  const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
 
-  const categoriesQuery = query(collection(firestore!, 'categories'), orderBy('label'));
-  const { data: categories } = useCollection<Category>(categoriesQuery, { listen: !!firestore });
+  const categoriesQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'categories'), orderBy('label'));
+  }, [firestore]);
+  const { data: categories } = useCollection<Category>(categoriesQuery);
 
   const handleAddStatus = async () => {
     if (!newStatusLabel.trim() || !firestore) return;
