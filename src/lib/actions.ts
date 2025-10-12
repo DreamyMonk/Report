@@ -26,7 +26,7 @@ export async function createAdminUser(prevState: any, formData: FormData) {
       role: 'admin',
       avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
       createdAt: new Date(),
-      requiresPasswordChange: true,
+      requiresPasswordChange: false,
     });
     
     // Seed initial data
