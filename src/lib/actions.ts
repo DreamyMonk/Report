@@ -416,5 +416,3 @@ export async function initializeData(db: Firestore) {
      console.log('Seeded default content.');
   }
 }
-
-    
