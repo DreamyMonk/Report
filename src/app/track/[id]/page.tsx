@@ -374,15 +374,15 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                             <CardTitle>Case Details</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm">
-                             <div className="flex items-center justify-between">
+                             <div className="flex items-start justify-between">
                                 <span className="text-muted-foreground flex items-center gap-2"><FileText className="h-4 w-4"/>Status</span>
                                 <span className="font-medium capitalize">{report.status}</span>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-start justify-between">
                                 <span className="text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4"/>Submitted</span>
                                 <span>{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</span>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-start justify-between">
                                 <span className="text-muted-foreground flex items-center gap-2"><Shield className="h-4 w-4"/>Severity</span>
                                 <Badge variant={report.severity === 'High' ? 'destructive' : report.severity === 'Medium' ? 'secondary' : 'default'}>{report.severity}</Badge>
                             </div>
@@ -475,3 +475,4 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     </div>
   );
 }
+
