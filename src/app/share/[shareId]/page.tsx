@@ -6,24 +6,53 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar, User, Shield, Tag, FileText, Bot, Clock, AlertTriangle, Users } from "lucide-react";
 import { format } from "date-fns";
-import { useCollection, useDoc, useFirestore } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { Report, SharedReport } from "@/lib/types";
-import { collection, doc, query, where } from "firebase/firestore";
-import { useMemo } from "react";
+import { collection, doc, query, where, onSnapshot } from "firebase/firestore";
+import { useMemo, useState, useEffect } from "react";
 import { Logo } from "@/components/icons/logo";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function SharedReportPage({ params: { shareId } }: { params: { shareId: string } }) {
   const firestore = useFirestore();
   const router = useRouter();
 
+  const [shareInfo, setShareInfo] = useState<SharedReport | null>(null);
+  const [report, setReport] = useState<Report | null>(null);
+  const [shareLoading, setShareLoading] = useState(true);
+  const [reportLoading, setReportLoading] = useState(true);
+  
   const shareQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'shared_reports'), where('id', '==', shareId));
   }, [firestore, shareId]);
 
-  const { data: shareData, loading: shareLoading } = useCollection<SharedReport>(shareQuery);
-  const shareInfo = useMemo(() => shareData?.[0], [shareData]);
-  
+  useEffect(() => {
+    if (!shareQuery) {
+        setShareLoading(false);
+        return;
+    }
+    const unsubscribe = onSnapshot(shareQuery, (snapshot) => {
+        if (!snapshot.empty) {
+            setShareInfo(snapshot.docs[0].data() as SharedReport);
+        } else {
+            setShareInfo(null);
+        }
+        setShareLoading(false);
+    }, (error) => {
+        console.error("Error fetching share info:", error);
+        const permissionError = new FirestorePermissionError({
+          path: (shareQuery as any)._query.path.toString(),
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setShareLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [shareQuery]);
+
   const isExpired = shareInfo ? new Date() > shareInfo.expiresAt.toDate() : false;
 
   const reportRef = useMemo(() => {
@@ -31,7 +60,32 @@ export default function SharedReportPage({ params: { shareId } }: { params: { sh
     return doc(firestore, 'reports', shareInfo.reportId);
   }, [firestore, shareInfo, isExpired]);
 
-  const { data: report, loading: reportLoading } = useDoc<Report>(reportRef);
+
+  useEffect(() => {
+    if (!reportRef) {
+        setReportLoading(false);
+        return;
+    }
+    setReportLoading(true);
+    const unsubscribe = onSnapshot(reportRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setReport({ docId: docSnap.id, ...docSnap.data() } as Report);
+      } else {
+        setReport(null);
+      }
+      setReportLoading(false);
+    }, (error) => {
+        console.error("Error fetching shared report:", error);
+        const permissionError = new FirestorePermissionError({
+          path: reportRef.path,
+          operation: 'get',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setReportLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [reportRef]);
   
   const loading = shareLoading || reportLoading;
   
@@ -181,3 +235,4 @@ export default function SharedReportPage({ params: { shareId } }: { params: { sh
     </div>
   );
 }
+
