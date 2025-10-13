@@ -315,7 +315,7 @@ export async function initializeData(db: Firestore) {
 
   const categoriesCollection = db.collection('categories');
   const categoriesSnapshot = await categoriesCollection.get();
-  if (categoriesSnapshot.empty) {
+  if (categoriesSnapshot.empty.get()) {
     const defaultCategories = [
       { label: 'Financial Misconduct' },
       { label: 'Harassment or Discrimination' },

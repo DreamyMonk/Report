@@ -37,7 +37,7 @@ export default function UsersPage() {
   useEffect(() => {
     if (!usersQuery) return;
     const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
-        const usersData = snapshot.docs.map(doc => ({ docId: doc.id, id: doc.data().id, ...doc.data() } as User));
+        const usersData = snapshot.docs.map(doc => ({ docId: doc.id, id: doc.id, ...doc.data() } as User));
         setUsers(usersData);
     }, (error) => {
         console.error("Error fetching users:", error);
@@ -81,17 +81,17 @@ export default function UsersPage() {
                           <AvatarImage src={user.avatarUrl} alt={user.name} />
                           <AvatarFallback>{user.name ? user.name.split(' ').map(n => n[0]).join('') : 'U'}</AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 space-y-1">
-                          <p className="font-semibold">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <div className="flex-1 space-y-1 min-w-0">
+                          <p className="font-semibold truncate">{user.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                           <div className="flex gap-2 items-center">
                               <Badge variant="outline" className="capitalize">{user.role || 'User'}</Badge>
                           </div>
-                          {user.designation && <p className="text-xs text-muted-foreground">{user.designation}, {user.department}</p>}
+                          {user.designation && <p className="text-xs text-muted-foreground truncate">{user.designation}, {user.department}</p>}
                       </div>
                       <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                                   <MoreVertical className="h-4 w-4" />
                               </Button>
                           </DropdownMenuTrigger>
