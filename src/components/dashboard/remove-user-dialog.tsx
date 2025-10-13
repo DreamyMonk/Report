@@ -67,7 +67,8 @@ export function RemoveUserDialog({ open, onOpenChange, user }: RemoveUserDialogP
     <AlertDialog open={open} onOpenChange={onOpenChange}>
         <AlertDialogContent>
         <form action={dispatch}>
-            <input type="hidden" name="userId" value={user.id} />
+            <input type="hidden" name="userId" value={user.docId} />
+            <input type="hidden" name="userUid" value={user.id} />
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -83,3 +84,5 @@ export function RemoveUserDialog({ open, onOpenChange, user }: RemoveUserDialogP
       </AlertDialog>
   )
 }
+
+    

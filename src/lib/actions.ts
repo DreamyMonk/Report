@@ -183,11 +183,13 @@ export async function updateUser(prevState: any, formData: FormData) {
         if (!userId) {
             return { message: 'User ID is missing.', success: false };
         }
+        
+        const userRec = await auth.getUserByEmail(email);
 
-        await auth.updateUser(userId, {
+        await auth.updateUser(userRec.uid, {
             displayName: name,
         });
-        await auth.setCustomUserClaims(userId, { role });
+        await auth.setCustomUserClaims(userRec.uid, { role });
         await db.collection('users').doc(userId).update({
             name,
             role,
@@ -212,7 +214,7 @@ export async function inviteUser(prevState: any, formData: FormData) {
         const designation = formData.get('designation') as string | undefined;
         const department = formData.get('department') as string | undefined;
         const password = formData.get('password') as string;
-
+        
         if (!password || password.length < 6) {
             return { message: 'The password must be a string with at least 6 characters.', success: false };
         }
@@ -249,8 +251,14 @@ export async function deleteUser(prevState: any, formData: FormData) {
     try {
         const { auth, db } = getFirebaseAdmin();
         const userId = formData.get('userId') as string;
+        const userUid = formData.get('userUid') as string;
 
-        await auth.deleteUser(userId);
+
+        if (!userId || !userUid) {
+            return { message: 'User ID is missing.', success: false };
+        }
+
+        await auth.deleteUser(userUid);
         await db.collection('users').doc(userId).delete();
 
         revalidatePath('/dashboard/users');
@@ -343,3 +351,5 @@ export async function initializeData(db: Firestore) {
      console.log('Seeded default content.');
   }
 }
+
+    
