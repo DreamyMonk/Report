@@ -572,3 +572,5 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     </div>
   );
 }
+
+    
