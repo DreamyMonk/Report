@@ -79,7 +79,7 @@ export function InviteUserDialog({ open, onOpenChange, userToEdit }: InviteUserD
         </DialogHeader>
 
         <form action={dispatch} className="space-y-4 py-4">
-          {isEditMode && <input type="hidden" name="userId" value={userToEdit?.id} />}
+          {isEditMode && <input type="hidden" name="userId" value={userToEdit?.docId} />}
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
             <Input id="name" name="name" required defaultValue={userToEdit?.name} />
