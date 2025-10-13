@@ -12,6 +12,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
 import { initializeData } from '@/lib/actions';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function Home() {
     const firestore = useFirestore();
@@ -28,6 +30,14 @@ export default function Home() {
         if (docSnap.exists()) {
           setContent(docSnap.data() as AppContent);
         }
+      },
+      (error) => {
+          console.error("Error fetching content:", error);
+          const permissionError = new FirestorePermissionError({
+            path: contentRef.path,
+            operation: 'get',
+          });
+          errorEmitter.emit('permission-error', permissionError);
       });
       return () => unsubscribe();
     }, [contentRef]);

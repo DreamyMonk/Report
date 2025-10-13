@@ -43,26 +43,40 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     
     const findReport = async () => {
       setLoading(true);
-      const reportsQuery = query(collection(firestore, 'reports'), where('id', '==', id.toUpperCase()));
+      const reportsCollection = collection(firestore, 'reports');
+      const q = query(reportsCollection, where('id', '==', id.toUpperCase()));
       
       try {
-        const reportSnapshot = await getDocs(reportsQuery);
+        const reportSnapshot = await getDocs(q);
 
         if (!reportSnapshot.empty) {
           const reportDoc = reportSnapshot.docs[0];
           const reportData = { docId: reportDoc.id, ...reportDoc.data() } as Report;
           setReport(reportData);
 
-          const messagesQuery = query(collection(firestore, 'reports', reportDoc.id, 'messages'), orderBy('sentAt', 'asc'));
+          const messagesCollection = collection(firestore, 'reports', reportDoc.id, 'messages');
+          const messagesQuery = query(messagesCollection, orderBy('sentAt', 'asc'));
           unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
             const msgs = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Message));
             setMessages(msgs);
+          }, (error) => {
+             console.error("Error fetching messages:", error);
+             const permissionError = new FirestorePermissionError({
+               path: messagesCollection.path,
+               operation: 'list',
+             });
+             errorEmitter.emit('permission-error', permissionError);
           });
         } else {
           setReport(null);
         }
       } catch (error) {
         console.error("Error fetching report:", error);
+        const permissionError = new FirestorePermissionError({
+          path: reportsCollection.path,
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
         setReport(null);
       } finally {
         setLoading(false);
@@ -71,10 +85,18 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
 
     findReport();
 
-    const statusesQuery = query(collection(firestore, 'statuses'));
+    const statusesCollection = collection(firestore, 'statuses');
+    const statusesQuery = query(statusesCollection);
     const unsubscribeStatuses = onSnapshot(statusesQuery, (snapshot) => {
       const statusList = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as CaseStatus));
       setStatuses(statusList);
+    }, (error) => {
+        console.error("Error fetching statuses:", error);
+        const permissionError = new FirestorePermissionError({
+          path: statusesCollection.path,
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
     });
 
     return () => {
@@ -150,7 +172,7 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     } finally {
       setIsUploading(false);
     }
-};
+  };
 
   if (loading) {
     return <div className="text-center p-12">Loading report...</div>

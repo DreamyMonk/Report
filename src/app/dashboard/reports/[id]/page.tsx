@@ -61,19 +61,40 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
       setLoading(false);
     }, (error) => {
         console.error("Error fetching report:", error);
+        const permissionError = new FirestorePermissionError({
+          path: reportRef.path,
+          operation: 'get',
+        });
+        errorEmitter.emit('permission-error', permissionError);
         setLoading(false);
     });
 
-    const messagesQuery = query(collection(firestore, 'reports', id, 'messages'), orderBy('sentAt', 'asc'));
+    const messagesCollection = collection(firestore, 'reports', id, 'messages');
+    const messagesQuery = query(messagesCollection, orderBy('sentAt', 'asc'));
     const unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
         const msgs = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Message));
         setMessages(msgs);
+    }, (error) => {
+        console.error("Error fetching messages:", error);
+        const permissionError = new FirestorePermissionError({
+          path: messagesCollection.path,
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
     });
 
-    const statusesQuery = query(collection(firestore, 'statuses'), orderBy('label'));
+    const statusesCollection = collection(firestore, 'statuses');
+    const statusesQuery = query(statusesCollection, orderBy('label'));
     const unsubscribeStatuses = onSnapshot(statusesQuery, (querySnapshot) => {
         const statusList = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as CaseStatus));
         setStatuses(statusList);
+    }, (error) => {
+        console.error("Error fetching statuses:", error);
+        const permissionError = new FirestorePermissionError({
+          path: statusesCollection.path,
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
     });
 
 
@@ -98,7 +119,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     }
   };
   
- const handleSendMessage = async () => {
+  const handleSendMessage = async () => {
     if ((!message.trim() && !attachment) || !firestore || !report?.docId || !user || !userData) return;
     
     setIsUploading(true);
@@ -161,7 +182,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     } finally {
       setIsUploading(false);
     }
-};
+  };
 
   
   const handleStatusChange = async (statusId: string) => {

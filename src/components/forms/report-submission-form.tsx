@@ -25,6 +25,8 @@ import { useFirestore } from "@/firebase";
 import { Category } from "@/lib/types";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { submitReport } from "@/lib/actions";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 const initialState = {
   message: null,
@@ -75,10 +77,19 @@ export function ReportSubmissionForm() {
 
   useEffect(() => {
     if (!firestore) return;
-    const categoriesQuery = query(collection(firestore, 'categories'), orderBy('label'));
+    const categoriesCollection = collection(firestore, 'categories');
+    const categoriesQuery = query(categoriesCollection, orderBy('label'));
     const unsubscribe = onSnapshot(categoriesQuery, (snapshot) => {
         const cats = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Category));
         setCategories(cats);
+    },
+    (error) => {
+        console.error("Error fetching categories:", error);
+        const permissionError = new FirestorePermissionError({
+          path: categoriesCollection.path,
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
     });
     return () => unsubscribe();
   }, [firestore]);
