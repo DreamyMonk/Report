@@ -52,6 +52,12 @@ export async function submitReport(prevState: any, formData: FormData) {
           assignees: [],
           // AI fields are omitted
         };
+        
+        // Remove undefined properties before sending to Firestore
+        if (!reportData.reporter?.name) delete reportData.reporter?.name;
+        if (!reportData.reporter?.email) delete reportData.reporter?.email;
+        if (!reportData.reporter?.phone) delete reportData.reporter?.phone;
+
 
         const reportRef = await db.collection('reports').add({
             ...reportData,
@@ -65,6 +71,7 @@ export async function submitReport(prevState: any, formData: FormData) {
             timestamp: new Date()
         });
         
+        revalidatePath('/');
         return {
             message: "Your report has been submitted.",
             success: true,
