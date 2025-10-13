@@ -102,59 +102,60 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     if ((!message.trim() && !attachment) || !firestore || !report?.docId || !user || !userData) return;
     setIsUploading(true);
 
-    let fileData: Message['attachment'] | null = null;
-    if (attachment) {
-        try {
-            const storageRef = ref(storage, `reports/${report.docId}/attachments/${Date.now()}_${attachment.name}`);
-            const snapshot = await uploadBytes(storageRef, attachment);
-            const downloadURL = await getDownloadURL(snapshot.ref);
-            fileData = {
-                url: downloadURL,
-                fileName: attachment.name,
-                fileType: attachment.type,
-            };
-        } catch(error) {
-            console.error("Error uploading file:", error);
-            toast({
-                variant: 'destructive',
-                title: "Upload Failed",
-                description: "Could not upload attachment. Please try again.",
-            });
-            setIsUploading(false);
-            return;
-        }
-    }
+    try {
+      let fileData: Message['attachment'] | null = null;
+      if (attachment) {
+          const storageRef = ref(storage, `reports/${report.docId}/attachments/${Date.now()}_${attachment.name}`);
+          const snapshot = await uploadBytes(storageRef, attachment);
+          const downloadURL = await getDownloadURL(snapshot.ref);
+          fileData = {
+              url: downloadURL,
+              fileName: attachment.name,
+              fileType: attachment.type,
+          };
+      }
 
-    const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
-    
-    addDoc(messagesCollection, {
-        content: message,
-        sentAt: serverTimestamp(),
-        sender: 'officer',
-        senderInfo: {
-            id: user.uid,
-            name: userData.name || userData.email || 'Case Officer',
-            avatarUrl: userData.avatarUrl || '',
-        },
-        ...(fileData && { attachment: fileData }),
-    }).catch(async (serverError) => {
+      const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
+      
+      await addDoc(messagesCollection, {
+          content: message,
+          sentAt: serverTimestamp(),
+          sender: 'officer',
+          senderInfo: {
+              id: user.uid,
+              name: userData.name || userData.email || 'Case Officer',
+              avatarUrl: userData.avatarUrl || '',
+          },
+          ...(fileData && { attachment: fileData }),
+      });
+
+      setMessage('');
+      setAttachment(null);
+      if(fileInputRef.current) {
+          fileInputRef.current.value = "";
+      }
+      
+      toast({
+          title: "Message sent!",
+      });
+
+    } catch (error) {
+      console.error("Error sending message:", error);
       const permissionError = new FirestorePermissionError({
-        path: messagesCollection.path,
+        path: `reports/${report.docId}/messages`,
         operation: 'create',
         requestResourceData: { content: message },
       });
       errorEmitter.emit('permission-error', permissionError);
-    });
+      toast({
+          variant: 'destructive',
+          title: "Send Failed",
+          description: "Could not send message. Please try again.",
+      });
 
-    setMessage('');
-    setAttachment(null);
-    if(fileInputRef.current) {
-        fileInputRef.current.value = "";
+    } finally {
+      setIsUploading(false);
     }
-    setIsUploading(false);
-    toast({
-        title: "Message sent!",
-    });
 };
 
   
@@ -446,3 +447,5 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     </div>
   );
 }
+
+    
