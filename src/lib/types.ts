@@ -45,11 +45,18 @@ export type Message = {
     name: string;
     avatarUrl: string;
   };
-  attachment?: {
-    url: string;
-    fileName: string;
-    fileType: string;
-  }
+}
+
+export type Attachment = {
+  docId?: string;
+  url: string;
+  fileName: string;
+  fileType: string;
+  uploadedAt: Timestamp;
+  uploadedBy: {
+    id: string;
+    name: string;
+  };
 }
 
 export type CaseStatus = {
@@ -86,5 +93,3 @@ export type AppContent = {
     docId?: string;
     submissionGuidelines: string;
 }
-
-    

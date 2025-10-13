@@ -5,10 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2 } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud } from "lucide-react";
 import { format } from "date-fns";
 import { useFirestore } from "@/firebase";
-import { Report, Message, User as AppUser, CaseStatus } from "@/lib/types";
+import { Report, Message, User as AppUser, CaseStatus, Attachment } from "@/lib/types";
 import { collection, doc, query, orderBy, addDoc, serverTimestamp, updateDoc, onSnapshot, getDoc } from "firebase/firestore";
 import { AssignCaseDialog } from "@/components/dashboard/assign-case-dialog";
 import { useMemo, useState, useEffect, useRef } from "react";
@@ -34,7 +34,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [message, setMessage] = useState('');
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const firestore = useFirestore();
   const { userData, user } = useAuth();
@@ -46,6 +46,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [statuses, setStatuses] = useState<CaseStatus[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
 
   useEffect(() => {
     if (!firestore) return;
@@ -96,12 +97,27 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
         });
         errorEmitter.emit('permission-error', permissionError);
     });
+    
+    const attachmentsCollection = collection(firestore, 'reports', id, 'attachments');
+    const attachmentsQuery = query(attachmentsCollection, orderBy('uploadedAt', 'desc'));
+    const unsubscribeAttachments = onSnapshot(attachmentsQuery, (querySnapshot) => {
+        const atts = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Attachment));
+        setAttachments(atts);
+    }, (error) => {
+        console.error("Error fetching attachments:", error);
+        const permissionError = new FirestorePermissionError({
+          path: attachmentsCollection.path,
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
 
 
     return () => {
         unsubscribeReport();
         unsubscribeMessages();
         unsubscribeStatuses();
+        unsubscribeAttachments();
     };
 
   }, [firestore, id]);
@@ -115,56 +131,75 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setAttachment(e.target.files[0]);
+      setFileToUpload(e.target.files[0]);
+    }
+  };
+
+  const handleUploadAttachment = async () => {
+    if (!fileToUpload || !firestore || !report?.docId || !user || !userData) return;
+    
+    setIsUploading(true);
+    
+    try {
+      const storageRef = ref(storage, `reports/${report.docId}/attachments/${Date.now()}_${fileToUpload.name}`);
+      const snapshot = await uploadBytes(storageRef, fileToUpload);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      const attachmentsCollection = collection(firestore, 'reports', report.docId, 'attachments');
+      await addDoc(attachmentsCollection, {
+        url: downloadURL,
+        fileName: fileToUpload.name,
+        fileType: fileToUpload.type,
+        uploadedAt: serverTimestamp(),
+        uploadedBy: {
+          id: user.uid,
+          name: userData.name || userData.email || 'Case Officer',
+        }
+      });
+      
+      toast({ title: "Attachment uploaded" });
+      setFileToUpload(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+    } catch (error) {
+       console.error("Error uploading attachment:", error);
+       const permissionError = new FirestorePermissionError({
+        path: `reports/${report.docId}/attachments`,
+        operation: 'create',
+      });
+      errorEmitter.emit('permission-error', permissionError);
+      toast({
+          variant: 'destructive',
+          title: "Upload Failed",
+          description: "Could not upload attachment. Please try again.",
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
   
   const handleSendMessage = async () => {
-    if ((!message.trim() && !attachment) || !firestore || !report?.docId || !user || !userData) return;
+    if (!message.trim() || !firestore || !report?.docId || !user || !userData) return;
     
-    setIsUploading(true);
+    const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
+    const messagePayload: Omit<Message, 'docId' | 'sentAt'> = {
+        content: message,
+        sender: 'officer',
+        senderInfo: {
+            id: user.uid,
+            name: userData.name || userData.email || 'Case Officer',
+            avatarUrl: userData.avatarUrl || '',
+        },
+    };
 
     try {
-      let fileData: Message['attachment'] | null = null;
-      if (attachment) {
-          const storageRef = ref(storage, `reports/${report.docId}/attachments/${Date.now()}_${attachment.name}`);
-          const snapshot = await uploadBytes(storageRef, attachment);
-          const downloadURL = await getDownloadURL(snapshot.ref);
-          fileData = {
-              url: downloadURL,
-              fileName: attachment.name,
-              fileType: attachment.type,
-          };
-      }
-
-      const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
-      
-      const messagePayload: Omit<Message, 'docId' | 'sentAt'> = {
-          content: message,
-          sender: 'officer',
-          senderInfo: {
-              id: user.uid,
-              name: userData.name || userData.email || 'Case Officer',
-              avatarUrl: userData.avatarUrl || '',
-          },
-          ...(fileData && { attachment: fileData }),
-      };
-
-      await addDoc(messagesCollection, {
-          ...messagePayload,
-          sentAt: serverTimestamp(),
-      });
-
-      setMessage('');
-      setAttachment(null);
-      if(fileInputRef.current) {
-          fileInputRef.current.value = "";
-      }
-      
-      toast({
-          title: "Message sent!",
-      });
-
+        await addDoc(messagesCollection, {
+            ...messagePayload,
+            sentAt: serverTimestamp(),
+        });
+        setMessage('');
     } catch (error) {
       console.error("Error sending message:", error);
       const permissionError = new FirestorePermissionError({
@@ -178,9 +213,6 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
           title: "Send Failed",
           description: "Could not send message. Please try again.",
       });
-
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -298,14 +330,6 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                                 )}>
                                     {msg.sender === 'officer' && <p className="text-sm font-semibold mb-1">{msg.senderInfo?.name || 'Case Officer'}</p>}
                                     {msg.content && <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
-                                    {msg.attachment && (
-                                        <Button variant={msg.sender === 'officer' ? 'secondary' : 'outline'} size="sm" asChild className="mt-2">
-                                           <a href={msg.attachment.url} target="_blank" rel="noopener noreferrer">
-                                            <LinkIcon className="mr-2 h-4 w-4" />
-                                            {msg.attachment.fileName}
-                                           </a>
-                                        </Button>
-                                    )}
                                     <p className={cn("text-xs mt-1 text-right", msg.sender === 'officer' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
                                         {msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : 'sending...'}
                                     </p>
@@ -322,28 +346,11 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                     </div>
 
                     <div className="pt-4 space-y-3 border-t">
-                        <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message to the reporter..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved || isUploading} />
-                         {attachment && (
-                          <div className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Paperclip className="h-4 w-4" />
-                            <span>{attachment.name}</span>
-                            <button onClick={() => {
-                                setAttachment(null);
-                                if(fileInputRef.current) fileInputRef.current.value = "";
-                            }} className="text-destructive text-xs">Remove</button>
-                          </div>
-                        )}
-                         <div className="flex justify-between items-center">
-                            <Button variant="outline" size="sm" asChild disabled={isResolved || isUploading}>
-                               <Label htmlFor="officer-file-upload">
-                                <Paperclip className="mr-2 h-4 w-4" />
-                                Attach File
-                               </Label>
-                            </Button>
-                             <Input id="officer-file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isResolved || isUploading} />
-                            <Button size="sm" onClick={handleSendMessage} disabled={(!message.trim() && !attachment) || isResolved || isUploading}>
-                                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4"/>}
-                                {isUploading ? 'Sending...' : 'Send Message'}
+                        <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message to the reporter..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved} />
+                         <div className="flex justify-end items-center">
+                            <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isResolved}>
+                                <Send className="mr-2 h-4 w-4"/>
+                                Send Message
                             </Button>
                         </div>
                     </div>
@@ -459,6 +466,46 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                     </Button>
                 </>
               )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Paperclip className="h-5 w-5" /> Attachments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                 {attachments.map((att) => (
+                    <a 
+                      key={att.docId}
+                      href={att.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-2 rounded-md bg-secondary hover:bg-secondary/80 transition-colors text-sm"
+                    >
+                      <LinkIcon className="h-4 w-4" />
+                      <span className="flex-1 truncate font-medium">{att.fileName}</span>
+                      <span className="text-xs text-muted-foreground">{format(att.uploadedAt.toDate(), "PP")}</span>
+                    </a>
+                  ))}
+                  {attachments.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No attachments found.</p>
+                  )}
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                  <Label htmlFor="officer-file-upload" className="text-sm font-medium mb-2 block">Add Attachment</Label>
+                   <div className="flex items-center gap-2">
+                      <Input id="officer-file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isUploading}/>
+                      <Label htmlFor="officer-file-upload" className={cn("flex-grow", !fileToUpload && "text-muted-foreground")}>
+                          <div className="border-2 border-dashed rounded-md px-3 py-2 text-sm cursor-pointer text-center hover:bg-accent">
+                          {fileToUpload ? fileToUpload.name : 'Click to select a file'}
+                          </div>
+                      </Label>
+                      <Button size="sm" onClick={handleUploadAttachment} disabled={!fileToUpload || isUploading}>
+                          {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4"/>}
+                          {isUploading ? 'Uploading...' : 'Upload'}
+                      </Button>
+                  </div>
+              </div>
             </CardContent>
           </Card>
         </div>

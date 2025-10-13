@@ -6,12 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUp, Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, Landmark, Building, Briefcase, UserCheck, Paperclip, Link as LinkIcon, Loader2 } from "lucide-react";
+import { Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, Landmark, Building, Briefcase, UserCheck, Paperclip, Link as LinkIcon, Loader2, UploadCloud } from "lucide-react";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useFirestore } from "@/firebase";
-import { Report, Message, CaseStatus } from "@/lib/types";
+import { Report, Message, CaseStatus, Attachment } from "@/lib/types";
 import { collection, doc, query, where, orderBy, addDoc, serverTimestamp, getDocs, onSnapshot } from "firebase/firestore";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -20,11 +20,10 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { cn } from "@/lib/utils";
 import { storage } from "@/firebase/client";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import Link from "next/link";
 
 export default function TrackReportDetailPage({ params: { id } }: { params: { id: string } }) {
   const [message, setMessage] = useState('');
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -34,15 +33,16 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
   const [report, setReport] = useState<Report | null>(null);
   const [statuses, setStatuses] = useState<CaseStatus[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!firestore) return;
 
     let unsubscribeMessages: (() => void) | undefined;
+    let unsubscribeAttachments: (() => void) | undefined;
     
     const findReport = async () => {
-      setLoading(true);
       const reportsCollection = collection(firestore, 'reports');
       const q = query(reportsCollection, where('id', '==', id.toUpperCase()));
       
@@ -67,6 +67,21 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
              });
              errorEmitter.emit('permission-error', permissionError);
           });
+          
+          const attachmentsCollection = collection(firestore, 'reports', reportDoc.id, 'attachments');
+          const attachmentsQuery = query(attachmentsCollection, orderBy('uploadedAt', 'desc'));
+          unsubscribeAttachments = onSnapshot(attachmentsQuery, (querySnapshot) => {
+              const atts = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Attachment));
+              setAttachments(atts);
+          }, (error) => {
+              console.error("Error fetching attachments:", error);
+              const permissionError = new FirestorePermissionError({
+                path: attachmentsCollection.path,
+                operation: 'list',
+              });
+              errorEmitter.emit('permission-error', permissionError);
+          });
+
         } else {
           setReport(null);
         }
@@ -101,9 +116,8 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
 
     return () => {
       unsubscribeStatuses();
-      if (unsubscribeMessages) {
-        unsubscribeMessages();
-      }
+      if (unsubscribeMessages) unsubscribeMessages();
+      if (unsubscribeAttachments) unsubscribeAttachments();
     };
   }, [firestore, id]);
 
@@ -115,47 +129,70 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setAttachment(e.target.files[0]);
+      setFileToUpload(e.target.files[0]);
+    }
+  };
+
+  const handleUploadAttachment = async () => {
+    if (!fileToUpload || !firestore || !report?.docId) return;
+    
+    setIsUploading(true);
+    
+    try {
+      const storageRef = ref(storage, `reports/${report.docId}/attachments/${Date.now()}_${fileToUpload.name}`);
+      const snapshot = await uploadBytes(storageRef, fileToUpload);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      const attachmentsCollection = collection(firestore, 'reports', report.docId, 'attachments');
+      await addDoc(attachmentsCollection, {
+        url: downloadURL,
+        fileName: fileToUpload.name,
+        fileType: fileToUpload.type,
+        uploadedAt: serverTimestamp(),
+        uploadedBy: {
+          id: 'reporter',
+          name: 'Reporter',
+        }
+      });
+      
+      toast({ title: "Attachment uploaded" });
+      setFileToUpload(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+    } catch (error) {
+       console.error("Error uploading attachment:", error);
+       const permissionError = new FirestorePermissionError({
+        path: `reports/${report.docId}/attachments`,
+        operation: 'create',
+      });
+      errorEmitter.emit('permission-error', permissionError);
+      toast({
+          variant: 'destructive',
+          title: "Upload Failed",
+          description: "Could not upload attachment. Please try again.",
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const handleSendMessage = async () => {
-    if ((!message.trim() && !attachment) || !firestore || !report?.docId) return;
-    setIsUploading(true);
-
+    if (!message.trim() || !firestore || !report?.docId) return;
+    
+    const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
+    const messagePayload: Omit<Message, 'docId' | 'sentAt'> = {
+        content: message,
+        sender: 'reporter',
+    };
+    
     try {
-      let fileData: Message['attachment'] | null = null;
-      if (attachment) {
-        const storageRef = ref(storage, `reports/${report.docId}/attachments/${Date.now()}_${attachment.name}`);
-        const snapshot = await uploadBytes(storageRef, attachment);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        fileData = {
-          url: downloadURL,
-          fileName: attachment.name,
-          fileType: attachment.type,
-        };
-      }
-      
-      const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
-      const messagePayload: Omit<Message, 'docId' | 'sentAt'> = {
-          content: message,
-          sender: 'reporter',
-          ...(fileData && { attachment: fileData }),
-      };
-      
       await addDoc(messagesCollection, {
           ...messagePayload,
           sentAt: serverTimestamp(),
       });
-
       setMessage('');
-      setAttachment(null);
-      if(fileInputRef.current) {
-          fileInputRef.current.value = "";
-      }
-      toast({
-          title: "Message sent!",
-      });
     } catch(error) {
       console.error("Error sending message:", error);
       const permissionError = new FirestorePermissionError({
@@ -169,8 +206,6 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
           title: "Send Failed",
           description: "Could not send message. Please try again.",
       });
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -275,14 +310,6 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                                         )}>
                                             {msg.sender === 'officer' && <p className="text-sm font-semibold mb-1">{msg.senderInfo?.name}</p>}
                                             {msg.content && <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
-                                            {msg.attachment && (
-                                              <Button variant={msg.sender === 'reporter' ? 'secondary' : 'outline'} size="sm" asChild className="mt-2">
-                                                 <a href={msg.attachment.url} target="_blank" rel="noopener noreferrer">
-                                                  <LinkIcon className="mr-2 h-4 w-4" />
-                                                  {msg.attachment.fileName}
-                                                 </a>
-                                              </Button>
-                                            )}
                                             <p className={cn("text-xs mt-1 text-right", msg.sender === 'reporter' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
                                                 {msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : 'sending...'}
                                             </p>
@@ -300,25 +327,11 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                                 </div>
 
                                 <div className="pt-4 space-y-3 border-t">
-                                    <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved || isUploading}/>
-                                      {attachment && (
-                                        <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                          <Paperclip className="h-4 w-4" />
-                                          <span>{attachment.name}</span>
-                                          <button onClick={() => {
-                                              setAttachment(null);
-                                              if(fileInputRef.current) fileInputRef.current.value = "";
-                                          }} className="text-destructive text-xs">Remove</button>
-                                        </div>
-                                      )}
-                                     <div className="flex justify-between items-center">
-                                         <Button variant="outline" size="sm" asChild disabled={isResolved || isUploading}>
-                                             <Label htmlFor="file-upload"><Paperclip className="mr-2 h-4 w-4"/> Attach File</Label>
-                                         </Button>
-                                         <Input id="file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isResolved || isUploading} />
-                                        <Button size="sm" onClick={handleSendMessage} disabled={(!message.trim() && !attachment) || isResolved || isUploading}>
-                                            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4"/>}
-                                            {isUploading ? 'Sending...' : 'Send Message'}
+                                    <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved}/>
+                                     <div className="flex justify-end items-center">
+                                        <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isResolved}>
+                                            <Send className="mr-2 h-4 w-4"/>
+                                            Send Message
                                         </Button>
                                     </div>
                                 </div>
@@ -374,9 +387,50 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                             )}
                         </CardContent>
                     </Card>
+                    <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2"><Paperclip className="h-5 w-5" /> Attachments</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                           <div className="space-y-3">
+                             {attachments.map((att) => (
+                                <a 
+                                  key={att.docId}
+                                  href={att.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-3 p-2 rounded-md bg-background hover:bg-muted transition-colors text-sm"
+                                >
+                                  <LinkIcon className="h-4 w-4" />
+                                  <span className="flex-1 truncate font-medium">{att.fileName}</span>
+                                  <span className="text-xs text-muted-foreground">{format(att.uploadedAt.toDate(), "PP")}</span>
+                                </a>
+                              ))}
+                              {attachments.length === 0 && (
+                                <p className="text-sm text-muted-foreground text-center py-4">No attachments uploaded.</p>
+                              )}
+                          </div>
+                          <div className="mt-4 pt-4 border-t">
+                              <Label htmlFor="reporter-file-upload" className="text-sm font-medium mb-2 block">Add Attachment</Label>
+                               <div className="flex items-center gap-2">
+                                  <Input id="reporter-file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isUploading || isResolved}/>
+                                  <Label htmlFor="reporter-file-upload" className={cn("flex-grow", !fileToUpload && "text-muted-foreground")}>
+                                      <div className="border-2 border-dashed rounded-md px-3 py-2 text-sm cursor-pointer text-center hover:bg-muted">
+                                      {fileToUpload ? fileToUpload.name : 'Click to select a file'}
+                                      </div>
+                                  </Label>
+                                  <Button size="sm" onClick={handleUploadAttachment} disabled={!fileToUpload || isUploading || isResolved}>
+                                      {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4"/>}
+                                      {isUploading ? 'Uploading...' : 'Upload'}
+                                  </Button>
+                              </div>
+                          </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>
     </div>
   );
 }
+
