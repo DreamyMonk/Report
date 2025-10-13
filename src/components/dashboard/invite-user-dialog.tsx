@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useActionState, useEffect, useMemo } from "react";
 import { useFormStatus } from "react-dom";
-import { inviteUser } from "@/lib/actions";
+import { inviteUser, updateUser } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -31,18 +31,20 @@ const initialState = {
   success: false,
 };
 
-function SubmitButton() {
+function SubmitButton({ isEditMode }: { isEditMode: boolean }) {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? <Loader2 className="animate-spin" /> : 'Invite User'}
+      {pending ? <Loader2 className="animate-spin" /> : (isEditMode ? 'Update User' : 'Invite User')}
     </Button>
   );
 }
 
-export function InviteUserDialog({ open, onOpenChange }: InviteUserDialogProps) {
+export function InviteUserDialog({ open, onOpenChange, userToEdit }: InviteUserDialogProps) {
   
-  const [state, dispatch] = useActionState(inviteUser, initialState);
+  const isEditMode = useMemo(() => !!userToEdit, [userToEdit]);
+  const action = isEditMode ? updateUser : inviteUser;
+  const [state, dispatch] = useActionState(action, initialState);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -63,33 +65,44 @@ export function InviteUserDialog({ open, onOpenChange }: InviteUserDialogProps) 
     }
   }, [state, toast, onOpenChange]);
 
+  const dialogTitle = isEditMode ? 'Edit User' : 'Add a New User';
+  const dialogDescription = isEditMode
+    ? 'Update the details for this user.'
+    : 'Create a new user account. The user will be required to change their password upon first login.';
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add a New User</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
-            Create a new user account. The user will be required to change their password upon first login.
+            {dialogDescription}
           </DialogDescription>
         </DialogHeader>
 
         <form action={dispatch} className="space-y-4 py-4">
+          {isEditMode && userToEdit?.docId && (
+            <input type="hidden" name="userId" value={userToEdit.docId} />
+          )}
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
-            <Input id="name" name="name" required />
+            <Input id="name" name="name" required defaultValue={userToEdit?.name || ''} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email Address</Label>
-            <Input id="email" name="email" type="email" required />
+            <Input id="email" name="email" type="email" required defaultValue={userToEdit?.email || ''} readOnly={isEditMode} />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Initial Password</Label>
-            <Input id="password" name="password" type="password" required />
-          </div>
+          {!isEditMode && (
+            <div className="space-y-2">
+              <Label htmlFor="password">Initial Password</Label>
+              <Input id="password" name="password" type="password" required />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select name="role" required defaultValue="officer">
+              <Select name="role" required defaultValue={userToEdit?.role || 'officer'}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
@@ -101,16 +114,16 @@ export function InviteUserDialog({ open, onOpenChange }: InviteUserDialogProps) 
             </div>
              <div className="space-y-2">
               <Label htmlFor="designation">Designation</Label>
-              <Input id="designation" name="designation" placeholder="e.g. Lead Investigator" />
+              <Input id="designation" name="designation" placeholder="e.g. Lead Investigator" defaultValue={userToEdit?.designation || ''} />
             </div>
           </div>
            <div className="space-y-2">
             <Label htmlFor="department">Department</Label>
-            <Input id="department" name="department" placeholder="e.g. Internal Affairs" />
+            <Input id="department" name="department" placeholder="e.g. Internal Affairs" defaultValue={userToEdit?.department || ''} />
           </div>
           <DialogFooter>
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <SubmitButton />
+            <SubmitButton isEditMode={isEditMode} />
           </DialogFooter>
         </form>
       </DialogContent>

@@ -173,14 +173,14 @@ export async function createAdminUser(prevState: any, formData: FormData) {
 export async function updateUser(prevState: any, formData: FormData) {
     try {
         const { auth, db } = getFirebaseAdmin();
-        const userId = formData.get('userId') as string;
+        const docId = formData.get('userId') as string;
         const email = formData.get('email') as string;
         const name = formData.get('name') as string;
         const role = formData.get('role') as string;
         const designation = formData.get('designation') as string | undefined;
         const department = formData.get('department') as string | undefined;
 
-        if (!userId) {
+        if (!docId) {
             return { message: 'User ID is missing.', success: false };
         }
         
@@ -190,7 +190,7 @@ export async function updateUser(prevState: any, formData: FormData) {
             displayName: name,
         });
         await auth.setCustomUserClaims(userRec.uid, { role });
-        await db.collection('users').doc(userId).update({
+        await db.collection('users').doc(docId).update({
             name,
             role,
             designation: designation || null,
