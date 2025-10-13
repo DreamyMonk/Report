@@ -253,7 +253,6 @@ export async function deleteUser(prevState: any, formData: FormData) {
         const docId = formData.get('docId') as string;
         const userUid = formData.get('userUid') as string;
 
-
         if (!docId || !userUid) {
             return { message: 'User ID is missing.', success: false };
         }
