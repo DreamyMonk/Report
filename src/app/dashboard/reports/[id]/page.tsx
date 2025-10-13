@@ -21,11 +21,10 @@ import { cn } from "@/lib/utils";
 import { ShareReportDialog } from "@/components/dashboard/share-report-dialog";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { storage } from "@/firebase/client";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Label } from "@/components/ui/label";
+import { getSignedR2Url } from "@/lib/actions";
 
 
 export default function ReportDetailPage({ params: { id } }: { params: { id: string } }) {
@@ -141,13 +140,27 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     setIsUploading(true);
     
     try {
-      const storageRef = ref(storage, `reports/${report.docId}/attachments/${Date.now()}_${fileToUpload.name}`);
-      const snapshot = await uploadBytes(storageRef, fileToUpload);
-      const downloadURL = await getDownloadURL(snapshot.ref);
+      const signedUrlResult = await getSignedR2Url(report.docId, fileToUpload.name, fileToUpload.type);
+      
+      if (!signedUrlResult.success || !signedUrlResult.url) {
+        throw new Error(signedUrlResult.error || "Failed to get signed URL.");
+      }
+      
+      const uploadResponse = await fetch(signedUrlResult.url, {
+        method: "PUT",
+        body: fileToUpload,
+        headers: {
+          "Content-Type": fileToUpload.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      }
 
       const attachmentsCollection = collection(firestore, 'reports', report.docId, 'attachments');
       await addDoc(attachmentsCollection, {
-        url: downloadURL,
+        url: signedUrlResult.publicUrl,
         fileName: fileToUpload.name,
         fileType: fileToUpload.type,
         uploadedAt: serverTimestamp(),
@@ -163,17 +176,12 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
         fileInputRef.current.value = "";
       }
 
-    } catch (error) {
+    } catch (error: any) {
        console.error("Error uploading attachment:", error);
-       const permissionError = new FirestorePermissionError({
-        path: `reports/${report.docId}/attachments`,
-        operation: 'create',
-      });
-      errorEmitter.emit('permission-error', permissionError);
       toast({
           variant: 'destructive',
           title: "Upload Failed",
-          description: "Could not upload attachment. Please try again.",
+          description: error.message || "Could not upload attachment. Please try again.",
       });
     } finally {
       setIsUploading(false);
@@ -484,7 +492,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                     >
                       <LinkIcon className="h-4 w-4" />
                       <span className="flex-1 truncate font-medium">{att.fileName}</span>
-                      <span className="text-xs text-muted-foreground">{format(att.uploadedAt.toDate(), "PP")}</span>
+                      <span className="text-xs text-muted-foreground">{att.uploadedAt ? format(att.uploadedAt.toDate(), "PP") : ''}</span>
                     </a>
                   ))}
                   {attachments.length === 0 && (
@@ -521,3 +529,4 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   );
 }
 
+    

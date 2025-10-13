@@ -6,6 +6,9 @@ import { revalidatePath } from 'next/cache';
 import type { Firestore } from 'firebase-admin/firestore';
 import { Report } from './types';
 import { nanoid } from 'nanoid';
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { R2 } from './r2';
 
 function generateReportId() {
   const prefix = 'IB';
@@ -87,6 +90,31 @@ export async function submitReport(prevState: any, formData: FormData) {
         };
     }
 }
+
+export async function getSignedR2Url(reportId: string, fileName: string, fileType: string) {
+    if (!process.env.R2_BUCKET_NAME || !process.env.R2_PUBLIC_URL) {
+        throw new Error("R2 environment variables are not set.");
+    }
+    
+    const key = `reports/${reportId}/${Date.now()}-${fileName}`;
+
+    const command = new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: key,
+        ContentType: fileType,
+    });
+    
+    try {
+        const signedUrl = await getSignedUrl(R2, command, { expiresIn: 3600 });
+        const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+        
+        return { success: true, url: signedUrl, publicUrl: publicUrl };
+    } catch (error) {
+        console.error("Error generating signed URL:", error);
+        return { success: false, error: "Could not generate upload URL." };
+    }
+}
+
 
 export async function createAdminUser(prevState: any, formData: FormData) {
   try {
