@@ -2,13 +2,13 @@
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useCollection, useFirestore } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { CaseStatus } from "@/lib/types";
-import { collection, query, orderBy, addDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, query, orderBy, addDoc, doc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { HexColorPicker } from "react-colorful";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -24,6 +24,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Lock, X } from "lucide-react";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export default function SettingsPage() {
   const firestore = useFirestore();
@@ -35,17 +37,45 @@ export default function SettingsPage() {
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; label: string; type: 'status' | 'category' } | null>(null);
 
+  const [statuses, setStatuses] = useState<CaseStatus[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+
   const statusesQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'statuses'), orderBy('label'));
   }, [firestore]);
-  const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
-
+  
   const categoriesQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'categories'), orderBy('label'));
   }, [firestore]);
-  const { data: categories } = useCollection<Category>(categoriesQuery);
+
+  useEffect(() => {
+    if (!statusesQuery) return;
+    const unsubscribe = onSnapshot(statusesQuery, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as CaseStatus));
+      setStatuses(data);
+    }, (error) => {
+      console.error("Error fetching statuses:", error);
+      const permissionError = new FirestorePermissionError({ path: 'statuses', operation: 'list' });
+      errorEmitter.emit('permission-error', permissionError);
+    });
+    return () => unsubscribe();
+  }, [statusesQuery]);
+
+  useEffect(() => {
+    if (!categoriesQuery) return;
+    const unsubscribe = onSnapshot(categoriesQuery, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Category));
+      setCategories(data);
+    }, (error) => {
+      console.error("Error fetching categories:", error);
+      const permissionError = new FirestorePermissionError({ path: 'categories', operation: 'list' });
+      errorEmitter.emit('permission-error', permissionError);
+    });
+    return () => unsubscribe();
+  }, [categoriesQuery]);
+
 
   const handleAddStatus = async () => {
     if (!newStatusLabel.trim() || !firestore) return;
@@ -285,5 +315,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
-    

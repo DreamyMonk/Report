@@ -1,23 +1,46 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCollection, useFirestore } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { AuditLog } from "@/lib/types";
-import { collection, query, orderBy } from "firebase/firestore";
-import { useMemo } from "react";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { useMemo, useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export default function AuditLogPage() {
   const firestore = useFirestore();
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const auditLogsQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'audit_logs'), orderBy('timestamp', 'desc'));
   }, [firestore]);
   
-  const { data: auditLogs, loading } = useCollection<AuditLog>(auditLogsQuery);
+  useEffect(() => {
+    if (!auditLogsQuery) return;
+    setLoading(true);
+    const unsubscribe = onSnapshot(auditLogsQuery, (snapshot) => {
+      const logData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as AuditLog));
+      setAuditLogs(logData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching audit logs:", error);
+      const permissionError = new FirestorePermissionError({
+        path: 'audit_logs',
+        operation: 'list',
+      });
+      errorEmitter.emit('permission-error', permissionError);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [auditLogsQuery]);
 
   return (
     <div className="space-y-6">
