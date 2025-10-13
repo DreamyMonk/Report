@@ -12,6 +12,8 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { useFirestore } from '../provider';
+import { errorEmitter } from '../error-emitter';
+import { FirestorePermissionError } from '../errors';
 
 export interface UseCollectionOptions {
   listen: boolean;
@@ -30,8 +32,6 @@ export function useCollection<T>(
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | null>(null);
 
-  // Use a ref to memoize the query object. This is important to prevent
-  // infinite loops in the useEffect hook.
   const queryRef = useRef(pathOrQuery);
   if (JSON.stringify(queryRef.current) !== JSON.stringify(pathOrQuery)) {
     queryRef.current = pathOrQuery;
@@ -60,15 +60,21 @@ export function useCollection<T>(
             })) as T[];
             setData(docs);
             setLoading(false);
+            setError(null);
         },
         (err: FirestoreError) => {
-            console.error(err);
+            const permissionError = new FirestorePermissionError({
+              path: q.toString(),
+              operation: 'list',
+            });
+            errorEmitter.emit('permission-error', permissionError);
             setError(err);
             setLoading(false);
         }
         );
         return () => unsubscribe();
     } else {
+        setLoading(true);
         getDocs(q).then((querySnapshot) => {
             const docs = querySnapshot.docs.map((doc) => ({
                 docId: doc.id,
@@ -77,7 +83,11 @@ export function useCollection<T>(
             setData(docs);
             setLoading(false);
         }).catch((err) => {
-            console.error(err);
+            const permissionError = new FirestorePermissionError({
+              path: q.toString(),
+              operation: 'list',
+            });
+            errorEmitter.emit('permission-error', permissionError);
             setError(err);
             setLoading(false);
         });
@@ -86,5 +96,5 @@ export function useCollection<T>(
 
   }, [firestore, queryRef, options.listen]);
 
-  return { data, loading, error, firestore };
+  return { data, loading, error };
 }
