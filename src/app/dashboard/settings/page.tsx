@@ -148,6 +148,11 @@ export default function SettingsPage() {
     }
   };
 
+  const displayedStatuses = useMemo(() => {
+    const obsoleteStatuses = ["New", "In Progress", "Case Closed"];
+    return statuses.filter(status => !obsoleteStatuses.includes(status.label));
+  }, [statuses]);
+
 
   return (
     <>
@@ -191,7 +196,7 @@ export default function SettingsPage() {
           <div>
             <h3 className="font-medium mb-4">Current Statuses</h3>
             <div className="flex flex-wrap gap-2">
-              {statuses?.map(status => (
+              {displayedStatuses?.map(status => (
                 <div key={status.docId} className="flex items-center gap-2 rounded-full border pl-3 pr-1 py-1 text-sm" style={status.isDefault ? { backgroundColor: status.color, color: 'white' } : {}}>
                   {status.isDefault && <Lock className="h-3 w-3" />}
                   <span>{status.label}</span>

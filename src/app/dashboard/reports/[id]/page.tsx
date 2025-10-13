@@ -313,7 +313,10 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   }, [statuses, report]);
 
   const selectableStatuses = useMemo(() => {
-    return statuses?.filter(s => s.label !== 'Resolved') || [];
+    if (!statuses) return [];
+    // Only show statuses that are not one of the hardcoded default progression statuses
+    const progressionStatuses = ["Resolved", "Case Closed", "New", "In Progress"];
+    return statuses.filter(s => !progressionStatuses.includes(s.label));
   }, [statuses]);
 
 
