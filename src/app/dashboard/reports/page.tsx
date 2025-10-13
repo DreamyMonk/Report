@@ -3,8 +3,9 @@
 import { ReportsTable } from "@/components/dashboard/reports-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFirestore } from "@/firebase";
+import { useAuth } from "@/firebase/auth-provider";
 import { Report } from "@/lib/types";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
 import { useMemo, useState, useEffect } from "react";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -12,13 +13,25 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function AllReportsPage() {
   const firestore = useFirestore();
+  const { user, userData } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [statusFilter, setStatusFilter] = useState('All');
 
   const reportsQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'reports'), orderBy('submittedAt', 'desc'));
-  }, [firestore]);
+    if (!firestore || !user) return null;
+    
+    const reportsCollection = collection(firestore, 'reports');
+
+    if (userData?.role === 'admin') {
+      return query(reportsCollection, orderBy('submittedAt', 'desc'));
+    }
+
+    return query(
+      reportsCollection,
+      where('assignees', 'array-contains', user.uid),
+      orderBy('submittedAt', 'desc')
+    );
+  }, [firestore, user, userData]);
   
   useEffect(() => {
     if (!reportsQuery) return;

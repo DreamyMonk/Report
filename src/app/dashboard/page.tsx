@@ -5,6 +5,7 @@ import { ReportsTable } from "@/components/dashboard/reports-table";
 import { ReportsByStatusChart } from "@/components/dashboard/reports-by-status-chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFirestore } from "@/firebase";
+import { useAuth } from "@/firebase/auth-provider";
 import { Report, AuditLog } from "@/lib/types";
 import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { useMemo, useState, useEffect } from "react";
@@ -17,20 +18,31 @@ import { errorEmitter } from "@/firebase/error-emitter";
 
 export default function DashboardPage() {
   const firestore = useFirestore();
+  const { user, userData } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditLogsLoading, setAuditLogsLoading] = useState(true);
   
   const highPriorityReportsQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(
+    if (!firestore || !user) return null;
+    
+    const baseQuery = query(
       collection(firestore, 'reports'),
-      where('severity', '==', 'High'),
-      where('status', '==', 'New'),
+      where('severity', 'in', ['High', 'Critical']),
+      where('status', '==', 'New')
+    );
+
+    if (userData?.role === 'admin') {
+      return query(baseQuery, orderBy('submittedAt', 'desc'), limit(5));
+    }
+    
+    return query(
+      baseQuery,
+      where('assignees', 'array-contains', user.uid),
       orderBy('submittedAt', 'desc'),
       limit(5)
     );
-  }, [firestore]);
+  }, [firestore, user, userData]);
 
   const auditLogsQuery = useMemo(() => {
     if (!firestore) return null;
@@ -45,7 +57,7 @@ export default function DashboardPage() {
     }, (error) => {
         console.error("Error fetching high priority reports:", error);
         const permissionError = new FirestorePermissionError({
-          path: (highPriorityReportsQuery as any)._query.path.toString(),
+          path: 'reports',
           operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
