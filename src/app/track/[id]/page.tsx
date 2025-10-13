@@ -39,64 +39,26 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
   useEffect(() => {
     if (!firestore) return;
 
-    let unsubscribeReport: (() => void) | undefined;
-    let unsubscribeMessages: (() => void) | undefined;
-    let unsubscribeAttachments: (() => void) | undefined;
-    
     const findReport = async () => {
+      setLoading(true);
       const reportsCollection = collection(firestore, 'reports');
       const q = query(reportsCollection, where('id', '==', id.toUpperCase()));
       
       try {
-        unsubscribeReport = onSnapshot(q, (reportSnapshot) => {
-            if (!reportSnapshot.empty) {
-                const reportDoc = reportSnapshot.docs[0];
-                const reportData = { docId: reportDoc.id, ...reportDoc.data() } as Report;
-                setReport(reportData);
-
-                // Now that we have the report, set up other listeners
-                const messagesCollection = collection(firestore, 'reports', reportDoc.id, 'messages');
-                const messagesQuery = query(messagesCollection, orderBy('sentAt', 'asc'));
-                unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
-                    const msgs = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Message));
-                    setMessages(msgs);
-                }, (error) => {
-                    console.error("Error fetching messages:", error);
-                    const permissionError = new FirestorePermissionError({
-                        path: messagesCollection.path,
-                        operation: 'list',
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                });
-                
-                const attachmentsCollection = collection(firestore, 'reports', reportDoc.id, 'attachments');
-                const attachmentsQuery = query(attachmentsCollection, orderBy('uploadedAt', 'desc'));
-                unsubscribeAttachments = onSnapshot(attachmentsQuery, (querySnapshot) => {
-                    const atts = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Attachment));
-                    setAttachments(atts);
-                }, (error) => {
-                    console.error("Error fetching attachments:", error);
-                    const permissionError = new FirestorePermissionError({
-                        path: attachmentsCollection.path,
-                        operation: 'list',
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                });
-            } else {
-                setReport(null);
-            }
-             setLoading(false);
-        }, (error) => {
-            console.error("Error fetching report:", error);
-            const permissionError = new FirestorePermissionError({ path: 'reports', operation: 'list' });
-            errorEmitter.emit('permission-error', permissionError);
+        const reportSnapshot = await getDocs(q);
+        if (!reportSnapshot.empty) {
+            const reportDoc = reportSnapshot.docs[0];
+            const reportData = { docId: reportDoc.id, ...reportDoc.data() } as Report;
+            setReport(reportData);
+        } else {
             setReport(null);
-            setLoading(false);
-        });
-
+        }
       } catch (error) {
-        console.error("Error setting up report listener:", error);
+        console.error("Error fetching report:", error);
+        const permissionError = new FirestorePermissionError({ path: `reports collection with id ${id}`, operation: 'list' });
+        errorEmitter.emit('permission-error', permissionError);
         setReport(null);
+      } finally {
         setLoading(false);
       }
     };
@@ -130,11 +92,47 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     return () => {
       unsubscribeStatuses();
       unsubscribeUsers();
-      if (unsubscribeReport) unsubscribeReport();
-      if (unsubscribeMessages) unsubscribeMessages();
-      if (unsubscribeAttachments) unsubscribeAttachments();
     };
   }, [firestore, id]);
+
+  useEffect(() => {
+    if (!firestore || !report?.docId) return;
+
+    const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
+    const messagesQuery = query(messagesCollection, orderBy('sentAt', 'asc'));
+    const unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
+        const msgs = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Message));
+        setMessages(msgs);
+    }, (error) => {
+        console.error("Error fetching messages:", error);
+        const permissionError = new FirestorePermissionError({
+            path: messagesCollection.path,
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
+    
+    const attachmentsCollection = collection(firestore, 'reports', report.docId, 'attachments');
+    const attachmentsQuery = query(attachmentsCollection, orderBy('uploadedAt', 'desc'));
+    const unsubscribeAttachments = onSnapshot(attachmentsQuery, (querySnapshot) => {
+        const atts = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Attachment));
+        setAttachments(atts);
+    }, (error) => {
+        console.error("Error fetching attachments:", error);
+        const permissionError = new FirestorePermissionError({
+            path: attachmentsCollection.path,
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
+    
+    return () => {
+      unsubscribeMessages();
+      unsubscribeAttachments();
+    }
+
+  }, [firestore, report?.docId])
+
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -475,3 +473,5 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     </div>
   );
 }
+
+    
