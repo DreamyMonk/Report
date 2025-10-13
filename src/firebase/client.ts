@@ -1,13 +1,16 @@
+
 'use client';
 import { getApp, getApps, initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { firebaseConfig } from './config';
 
 // Prevent re-initialization
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
+let storage: FirebaseStorage;
 
 if (!getApps().length) {
     app = initializeApp(firebaseConfig);
@@ -17,5 +20,6 @@ if (!getApps().length) {
 
 auth = getAuth(app);
 db = getFirestore(app);
+storage = getStorage(app);
 
-export { app, auth, db };
+export { app, auth, db, storage };

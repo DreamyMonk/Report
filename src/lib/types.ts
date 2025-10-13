@@ -45,7 +45,11 @@ export type Message = {
     name: string;
     avatarUrl: string;
   };
-  fileUrl?: string;
+  attachment?: {
+    url: string;
+    fileName: string;
+    fileType: string;
+  }
 }
 
 export type CaseStatus = {

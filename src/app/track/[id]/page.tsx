@@ -6,23 +6,30 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUp, Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, Landmark, Building, Briefcase, UserCheck } from "lucide-react";
+import { FileUp, Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, Landmark, Building, Briefcase, UserCheck, Paperclip, Link as LinkIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useFirestore } from "@/firebase";
 import { Report, Message, CaseStatus } from "@/lib/types";
 import { collection, doc, query, where, orderBy, addDoc, serverTimestamp, getDocs, onSnapshot } from "firebase/firestore";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { cn } from "@/lib/utils";
+import { storage } from "@/firebase/client";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import Link from "next/link";
 
 export default function TrackReportDetailPage({ params: { id } }: { params: { id: string } }) {
   const [message, setMessage] = useState('');
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [report, setReport] = useState<Report | null>(null);
   const [statuses, setStatuses] = useState<CaseStatus[]>([]);
@@ -35,7 +42,6 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     let unsubscribeMessages: (() => void) | undefined;
     
     const findReport = async () => {
-      setLoading(true);
       const reportsQuery = query(collection(firestore, 'reports'), where('id', '==', id.toUpperCase()));
       
       try {
@@ -46,7 +52,6 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
           const reportData = { docId: reportDoc.id, ...reportDoc.data() } as Report;
           setReport(reportData);
 
-          // Set up listeners after finding the report
           const messagesQuery = query(collection(firestore, 'reports', reportDoc.id, 'messages'), orderBy('sentAt', 'asc'));
           unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
             const msgs = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Message));
@@ -79,9 +84,45 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     };
   }, [firestore, id]);
 
+  useEffect(() => {
+    if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
- const handleSendMessage = () => {
-    if (!message.trim() || !firestore || !report?.docId) return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAttachment(e.target.files[0]);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if ((!message.trim() && !attachment) || !firestore || !report?.docId) return;
+
+    setIsUploading(true);
+    let fileData: Message['attachment'] | null = null;
+
+    if (attachment) {
+      try {
+        const storageRef = ref(storage, `reports/${report.docId}/attachments/${Date.now()}_${attachment.name}`);
+        const snapshot = await uploadBytes(storageRef, attachment);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        fileData = {
+          url: downloadURL,
+          fileName: attachment.name,
+          fileType: attachment.type,
+        };
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        toast({
+          variant: 'destructive',
+          title: "Upload Failed",
+          description: "Could not upload attachment. Please try again.",
+        });
+        setIsUploading(false);
+        return;
+      }
+    }
 
     const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
     
@@ -89,6 +130,7 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
         content: message,
         sentAt: serverTimestamp(),
         sender: 'reporter',
+        ...(fileData && { attachment: fileData }),
     }).catch(async (serverError) => {
       const permissionError = new FirestorePermissionError({
         path: messagesCollection.path,
@@ -99,6 +141,11 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     });
 
     setMessage('');
+    setAttachment(null);
+    if(fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
+    setIsUploading(false);
     toast({
         title: "Message sent!",
     });
@@ -190,7 +237,7 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                         </CardHeader>
                         <CardContent>
                              <div className="space-y-4">
-                                <div className="h-96 overflow-y-auto pr-4 space-y-4 border rounded-md p-4 bg-background flex flex-col">
+                                <div ref={chatContainerRef} className="h-96 overflow-y-auto pr-4 space-y-4 border rounded-md p-4 bg-background flex flex-col">
                                 {messages?.map((msg) => (
                                      <div key={msg.docId} className={cn("flex items-end gap-3", msg.sender === 'reporter' ? 'justify-end' : 'justify-start')}>
                                         {msg.sender === 'officer' && (
@@ -204,7 +251,15 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                                             msg.sender === 'reporter' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
                                         )}>
                                             {msg.sender === 'officer' && <p className="text-sm font-semibold mb-1">{msg.senderInfo?.name}</p>}
-                                            <p className="text-sm">{msg.content}</p>
+                                            {msg.content && <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
+                                            {msg.attachment && (
+                                              <Button variant={msg.sender === 'reporter' ? 'secondary' : 'outline'} size="sm" asChild className="mt-2">
+                                                 <a href={msg.attachment.url} target="_blank" rel="noopener noreferrer">
+                                                  <LinkIcon className="mr-2 h-4 w-4" />
+                                                  {msg.attachment.fileName}
+                                                 </a>
+                                              </Button>
+                                            )}
                                             <p className={cn("text-xs mt-1 text-right", msg.sender === 'reporter' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
                                                 {msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : 'sending...'}
                                             </p>
@@ -222,14 +277,25 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                                 </div>
 
                                 <div className="pt-4 space-y-3 border-t">
-                                    <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved}/>
+                                    <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved || isUploading}/>
+                                      {attachment && (
+                                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                          <Paperclip className="h-4 w-4" />
+                                          <span>{attachment.name}</span>
+                                          <button onClick={() => {
+                                              setAttachment(null);
+                                              if(fileInputRef.current) fileInputRef.current.value = "";
+                                          }} className="text-destructive text-xs">Remove</button>
+                                        </div>
+                                      )}
                                      <div className="flex justify-between items-center">
-                                         <Button variant="outline" size="sm" asChild disabled={isResolved}>
-                                             <Label htmlFor="file-upload"><FileUp className="mr-2 h-4 w-4"/> Attach File</Label>
+                                         <Button variant="outline" size="sm" asChild disabled={isResolved || isUploading}>
+                                             <Label htmlFor="file-upload"><Paperclip className="mr-2 h-4 w-4"/> Attach File</Label>
                                          </Button>
-                                         <Input id="file-upload" type="file" className="hidden" disabled={isResolved}/>
-                                        <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isResolved}>
-                                            <Send className="mr-2 h-4 w-4"/>Send Message
+                                         <Input id="file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isResolved || isUploading} />
+                                        <Button size="sm" onClick={handleSendMessage} disabled={(!message.trim() && !attachment) || isResolved || isUploading}>
+                                            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4"/>}
+                                            {isUploading ? 'Sending...' : 'Send Message'}
                                         </Button>
                                     </div>
                                 </div>
@@ -291,5 +357,3 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     </div>
   );
 }
-
-    
