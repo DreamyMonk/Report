@@ -8,16 +8,22 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart"
-import { useCollection, useFirestore } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { CaseStatus, Report } from "@/lib/types";
-import { collection, query } from "firebase/firestore";
-import { useMemo } from "react";
+import { collection, onSnapshot, query } from "firebase/firestore";
+import { useMemo, useState, useEffect } from "react";
 import { Pie, PieChart, Cell } from "recharts";
 import type { ChartConfig } from "@/components/ui/chart";
 import { TrendingUp } from "lucide-react";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function ReportsByStatusChart() {
     const firestore = useFirestore();
+    const [reports, setReports] = useState<Report[]>([]);
+    const [statuses, setStatuses] = useState<CaseStatus[]>([]);
+    const [reportsLoading, setReportsLoading] = useState(true);
+    const [statusesLoading, setStatusesLoading] = useState(true);
 
     const reportsQuery = useMemo(() => {
         if (!firestore) return null;
@@ -29,8 +35,35 @@ export function ReportsByStatusChart() {
         return query(collection(firestore, 'statuses'));
     }, [firestore]);
 
-    const { data: reports, loading: reportsLoading } = useCollection<Report>(reportsQuery);
-    const { data: statuses, loading: statusesLoading } = useCollection<CaseStatus>(statusesQuery);
+    useEffect(() => {
+      if (!reportsQuery) return;
+      const unsubscribe = onSnapshot(reportsQuery, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Report));
+        setReports(data);
+        setReportsLoading(false);
+      }, (error) => {
+        console.error("Error fetching reports for chart:", error);
+        const permissionError = new FirestorePermissionError({ path: 'reports', operation: 'list' });
+        errorEmitter.emit('permission-error', permissionError);
+        setReportsLoading(false);
+      });
+      return () => unsubscribe();
+    }, [reportsQuery]);
+
+    useEffect(() => {
+      if (!statusesQuery) return;
+      const unsubscribe = onSnapshot(statusesQuery, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as CaseStatus));
+        setStatuses(data);
+        setStatusesLoading(false);
+      }, (error) => {
+        console.error("Error fetching statuses for chart:", error);
+        const permissionError = new FirestorePermissionError({ path: 'statuses', operation: 'list' });
+        errorEmitter.emit('permission-error', permissionError);
+        setStatusesLoading(false);
+      });
+      return () => unsubscribe();
+    }, [statusesQuery]);
     
     const chartData = useMemo(() => {
         if (!reports || !statuses) return [];

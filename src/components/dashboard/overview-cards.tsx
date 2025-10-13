@@ -1,19 +1,39 @@
+
 'use client';
-import { useCollection, useFirestore } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { Report } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, AlertCircle, Hourglass, CheckCircle } from "lucide-react";
-import { collection, query } from "firebase/firestore";
-import { useMemo } from "react";
+import { collection, query, onSnapshot } from "firebase/firestore";
+import { useMemo, useState, useEffect } from "react";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function OverviewCards() {
   const firestore = useFirestore();
+  const [reports, setReports] = useState<Report[]>([]);
+
   const reportsQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'reports'));
   }, [firestore]);
 
-  const { data: reports } = useCollection<Report>(reportsQuery);
+  useEffect(() => {
+    if (!reportsQuery) return;
+    const unsubscribe = onSnapshot(reportsQuery, (snapshot) => {
+      const reportsData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Report));
+      setReports(reportsData);
+    }, (error) => {
+        console.error("Error fetching reports for overview:", error);
+        const permissionError = new FirestorePermissionError({
+          path: (reportsQuery as any)._query.path.toString(),
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
+
+    return () => unsubscribe();
+  }, [reportsQuery]);
 
   const totalReports = reports?.length || 0;
   const newReports = reports?.filter(r => r.status === "New").length || 0;
