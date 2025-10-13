@@ -357,6 +357,27 @@ export async function updatePassword(prevState: any, formData: FormData) {
     }
 }
 
+export async function deleteReport(prevState: any, formData: FormData) {
+    try {
+        const { db } = getFirebaseAdmin();
+        const reportId = formData.get('reportId') as string;
+
+        if (!reportId) {
+            return { message: 'Report ID is missing.', success: false };
+        }
+        
+        // Note: This does not delete subcollections like messages or attachments.
+        // For a full cleanup, a Firebase Function would be required.
+        await db.collection('reports').doc(reportId).delete();
+
+        revalidatePath('/dashboard/reports');
+        revalidatePath('/dashboard');
+        return { message: 'Report has been successfully deleted.', success: true };
+    } catch (error: any) {
+        return { message: error.message || 'Failed to delete report.', success: false };
+    }
+}
+
 
 export async function initializeData(db: Firestore) {
   if (!db) {

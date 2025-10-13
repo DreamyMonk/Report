@@ -15,9 +15,11 @@ import type { Report } from "@/lib/types";
 import Link from "next/link";
 import { useState } from "react";
 import { AssignCaseDialog } from "./assign-case-dialog";
+import { DeleteReportDialog } from "./delete-report-dialog";
 
 export function ReportTableActions({ report }: { report: Report }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [assignMode, setAssignMode] = useState<'assign' | 'transfer' | 'add'>('assign');
 
   const openDialog = (mode: 'assign' | 'transfer' | 'add') => {
@@ -51,8 +53,11 @@ export function ReportTableActions({ report }: { report: Report }) {
             <DropdownMenuItem onClick={() => openDialog('assign')}>Assign Case</DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-            Dismiss Report
+          <DropdownMenuItem 
+            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+            onClick={() => setIsDeleteDialogOpen(true)}
+          >
+            Delete Report
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -61,6 +66,11 @@ export function ReportTableActions({ report }: { report: Report }) {
         onOpenChange={setIsAssignDialogOpen} 
         report={report}
         mode={assignMode}
+      />
+      <DeleteReportDialog 
+        open={isDeleteDialogOpen} 
+        onOpenChange={setIsDeleteDialogOpen} 
+        report={report}
       />
     </>
   );
