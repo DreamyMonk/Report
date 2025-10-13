@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud, FileX2 } from "lucide-react";
 import { format } from "date-fns";
 import { useFirestore } from "@/firebase";
 import { Report, Message, User as AppUser, CaseStatus, Attachment } from "@/lib/types";
@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { getSignedR2Url } from "@/lib/actions";
+import { CloseCaseDialog } from "@/components/dashboard/close-case-dialog";
 
 
 export default function ReportDetailPage({ params: { id } }: { params: { id: string } }) {
@@ -32,6 +33,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   const [assignMode, setAssignMode] = useState<'assign' | 'transfer' | 'add'>('assign');
   const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isCloseCaseDialogOpen, setIsCloseCaseDialogOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -296,7 +298,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   }
 
   const isConfidential = report.submissionType === 'confidential';
-  const isResolved = report.status === 'Resolved';
+  const isResolved = report.status === 'Resolved' || report.status === 'Dismissed';
 
 
   return (
@@ -312,9 +314,14 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
             </div>
             <h1 className="font-headline text-4xl font-bold">{report.title}</h1>
         </div>
-        <Button variant="outline" onClick={() => setIsShareDialogOpen(true)}>
-            <Share2 className="mr-2 h-4 w-4" /> Share
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button variant="destructive" onClick={() => setIsCloseCaseDialogOpen(true)} disabled={isResolved}>
+                <FileX2 className="mr-2 h-4 w-4" /> Close Case
+            </Button>
+            <Button variant="outline" onClick={() => setIsShareDialogOpen(true)}>
+                <Share2 className="mr-2 h-4 w-4" /> Share
+            </Button>
+        </div>
       </div>
 
 
@@ -399,6 +406,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                       aria-expanded={isStatusPopoverOpen}
                       className="w-[200px] justify-between capitalize"
                       style={currentStatus ? { backgroundColor: currentStatus.color, color: '#fff' } : {}}
+                      disabled={isResolved}
                     >
                       {report.status}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -474,10 +482,10 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                         </div>
                     ))}
                     <div className="flex flex-col gap-2 pt-4">
-                        <Button variant="outline" className="w-full" onClick={() => openAssignDialog('transfer')}>
+                        <Button variant="outline" className="w-full" onClick={() => openAssignDialog('transfer')} disabled={isResolved}>
                             <Replace className="mr-2 h-4 w-4" /> Transfer Case
                         </Button>
-                        <Button variant="outline" className="w-full" onClick={() => openAssignDialog('add')}>
+                        <Button variant="outline" className="w-full" onClick={() => openAssignDialog('add')} disabled={isResolved}>
                             <UserPlus className="mr-2 h-4 w-4" /> Add Assignee
                         </Button>
                     </div>
@@ -485,7 +493,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
               ) : (
                 <>
                     <div className="text-sm text-muted-foreground text-center py-4">Unassigned</div>
-                    <Button variant="outline" className="w-full mt-4" onClick={() => openAssignDialog('assign')}>
+                    <Button variant="outline" className="w-full mt-4" onClick={() => openAssignDialog('assign')} disabled={isResolved}>
                         Assign Case
                     </Button>
                 </>
@@ -533,13 +541,13 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
               <div className="mt-4 pt-4 border-t">
                   <Label htmlFor="officer-file-upload" className="text-sm font-medium mb-2 block">Add Attachment</Label>
                    <div className="flex items-center gap-2">
-                      <Input id="officer-file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isUploading}/>
+                      <Input id="officer-file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isUploading || isResolved}/>
                       <Label htmlFor="officer-file-upload" className={cn("flex-grow min-w-0", !fileToUpload && "text-muted-foreground")}>
                           <div className="border-2 border-dashed rounded-md px-3 py-2 text-sm cursor-pointer text-center hover:bg-accent truncate">
                           {fileToUpload ? fileToUpload.name : 'Click to select a file'}
                           </div>
                       </Label>
-                      <Button size="sm" onClick={handleUploadAttachment} disabled={!fileToUpload || isUploading}>
+                      <Button size="sm" onClick={handleUploadAttachment} disabled={!fileToUpload || isUploading || isResolved}>
                           {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4"/>}
                           {isUploading ? 'Uploading...' : 'Upload'}
                       </Button>
@@ -556,7 +564,11 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
         mode={assignMode}
       />
       <ShareReportDialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen} reportId={report.docId!} />
+       <CloseCaseDialog 
+        open={isCloseCaseDialogOpen} 
+        onOpenChange={setIsCloseCaseDialogOpen} 
+        report={report} 
+      />
     </div>
   );
 }
-
