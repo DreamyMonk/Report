@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -34,11 +35,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Report } from "@/lib/types";
+import type { Report, CaseStatus } from "@/lib/types";
 import { getColumns } from "./reports-columns";
-import { useCollection, useFirestore } from "@/firebase";
-import { CaseStatus } from "@/lib/types";
-import { collection, query } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
+import { collection, query, onSnapshot } from "firebase/firestore";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function ReportsTable({ reports }: { reports: Report[] }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -47,11 +49,25 @@ export function ReportsTable({ reports }: { reports: Report[] }) {
   const [rowSelection, setRowSelection] = React.useState({});
   
   const firestore = useFirestore();
+  const [statuses, setStatuses] = React.useState<CaseStatus[]>([]);
+
   const statusesQuery = React.useMemo(() => {
     if(!firestore) return null;
     return query(collection(firestore, 'statuses'));
   }, [firestore]);
-  const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
+  
+  React.useEffect(() => {
+    if (!statusesQuery) return;
+    const unsubscribe = onSnapshot(statusesQuery, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as CaseStatus));
+      setStatuses(data);
+    }, (error) => {
+      console.error("Error fetching statuses for table:", error);
+      const permissionError = new FirestorePermissionError({ path: 'statuses', operation: 'list' });
+      errorEmitter.emit('permission-error', permissionError);
+    });
+    return () => unsubscribe();
+  }, [statusesQuery]);
 
 
   const columns = React.useMemo(() => getColumns(statuses || []), [statuses]);
