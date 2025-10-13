@@ -149,8 +149,7 @@ export default function SettingsPage() {
   };
 
   const displayedStatuses = useMemo(() => {
-    const obsoleteStatuses = ["New", "Case Closed"];
-    return statuses.filter(status => !obsoleteStatuses.includes(status.label));
+    return statuses.filter(status => status.label !== "Report Submitted");
   }, [statuses]);
 
 

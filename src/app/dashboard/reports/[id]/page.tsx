@@ -314,9 +314,8 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
 
   const selectableStatuses = useMemo(() => {
     if (!statuses) return [];
-    // Exclude the final "Resolved" status and other obsolete statuses from the dropdown
-    const excludedStatuses = ["Resolved", "New", "Case Closed"];
-    return statuses.filter(s => !excludedStatuses.includes(s.label));
+    // Exclude the final "Resolved" status from the dropdown
+    return statuses.filter(s => s.label !== "Resolved");
   }, [statuses]);
 
 
