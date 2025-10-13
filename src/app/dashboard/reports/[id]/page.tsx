@@ -114,7 +114,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
 
     const usersCollection = collection(firestore, 'users');
     const unsubscribeUsers = onSnapshot(usersCollection, (querySnapshot) => {
-        const usersList = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as AppUser));
+        const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUser));
         setAllUsers(usersList);
     }, (error) => {
         console.error("Error fetching users:", error);
@@ -560,5 +560,3 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   );
 }
 
-
-    
