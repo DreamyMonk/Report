@@ -1,70 +1,50 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    //
-    // Functions
-    //
-    function isSignedIn() {
-      return request.auth != null;
+
+    function isAppUser() {
+      return request.auth != null && ('role' in request.auth.token && (request.auth.token.role == 'admin' || request.auth.token.role == 'officer'));
     }
 
-    function isRole(role) {
-      return isSignedIn() && request.auth.token.role == role;
-    }
-
-    function isOneOfRoles(roles) {
-      return isSignedIn() && request.auth.token.role in roles;
+    match /users/{userId} {
+      allow read, write: if isAppUser();
     }
     
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    //
-    // Rules
-    //
-    match /users/{userId} {
-      allow read, write: if isOwner(userId) || isOneOfRoles(['admin']);
-    }
-
     match /reports/{reportId} {
-      allow read, write: if isOneOfRoles(['admin', 'officer']);
-
+      allow list: if isAppUser();
+      allow read, write: if isAppUser();
+      
       match /messages/{messageId} {
-        allow read, write: if isOneOfRoles(['admin', 'officer']);
-        allow create: if isSignedIn(); // For reporters to send messages
+        allow list, read, write: if isAppUser();
       }
       
       match /attachments/{attachmentId} {
-        allow read, write: if isOneOfRoles(['admin', 'officer']);
-        allow create: if isSignedIn(); // For reporters to upload
+         allow list, read, write: if isAppUser();
       }
     }
     
-    match /shared_reports/{shareId} {
-      allow read;
-      allow write: if isOneOfRoles(['admin', 'officer']);
-    }
-
     match /statuses/{statusId} {
-      allow read;
-      allow write: if isOneOfRoles(['admin']);
+      allow read: if true;
+      allow write: if isAppUser();
+    }
+    
+    match /categories/{categoryId} {
+       allow read: if true;
+       allow write: if isAppUser();
+    }
+    
+    match /shared_reports/{shareId} {
+      allow read, write: if true; // Publicly accessible for link sharing
     }
 
-    match /categories/{categoryId} {
-      allow read;
-      allow write: if isOneOfRoles(['admin']);
+    match /content/{contentId} {
+        allow read: if true;
+        allow write: if isAppUser();
     }
     
     match /audit_logs/{logId} {
-      allow read, write: if isOneOfRoles(['admin']);
-    }
-
-    match /content/{docId} {
-      allow read;
-      allow write: if isOneOfRoles(['admin']);
+      allow list, read, write: if isAppUser();
     }
   }
 }
