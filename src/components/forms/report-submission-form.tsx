@@ -53,7 +53,7 @@ export function ReportSubmissionForm() {
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    if (state.message) {
+    if (state && state.message) {
       if (state.success) {
         toast({
           title: "Success",
