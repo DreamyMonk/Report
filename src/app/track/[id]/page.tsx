@@ -47,7 +47,8 @@ const ReadMore = ({ text, maxLength = 100 }: { text: string, maxLength?: number 
 };
 
 
-export default function TrackReportDetailPage({ params: { id } }: { params: { id: string } }) {
+export default function TrackReportDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [message, setMessage] = useState('');
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -503,3 +504,5 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     </div>
   );
 }
+
+    
