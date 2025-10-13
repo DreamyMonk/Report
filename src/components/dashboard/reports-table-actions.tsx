@@ -16,11 +16,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { AssignCaseDialog } from "./assign-case-dialog";
 import { DeleteReportDialog } from "./delete-report-dialog";
+import { useAuth } from "@/firebase/auth-provider";
 
 export function ReportTableActions({ report }: { report: Report }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [assignMode, setAssignMode] = useState<'assign' | 'transfer' | 'add'>('assign');
+  const { userData } = useAuth();
 
   const openDialog = (mode: 'assign' | 'transfer' | 'add') => {
     setAssignMode(mode);
@@ -52,13 +54,17 @@ export function ReportTableActions({ report }: { report: Report }) {
           ) : (
             <DropdownMenuItem onClick={() => openDialog('assign')}>Assign Case</DropdownMenuItem>
           )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            className="text-destructive focus:text-destructive focus:bg-destructive/10"
-            onClick={() => setIsDeleteDialogOpen(true)}
-          >
-            Delete Report
-          </DropdownMenuItem>
+          {userData?.role === 'admin' && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                Delete Report
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       <AssignCaseDialog 
