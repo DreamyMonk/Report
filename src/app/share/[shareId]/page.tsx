@@ -13,13 +13,14 @@ import { useMemo } from "react";
 import { Logo } from "@/components/icons/logo";
 
 export default function SharedReportPage({ params }: { params: { shareId: string } }) {
+  const { shareId } = params;
   const firestore = useFirestore();
   const router = useRouter();
 
   const shareQuery = useMemo(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'shared_reports'), where('id', '==', params.shareId));
-  }, [firestore, params.shareId]);
+    return query(collection(firestore, 'shared_reports'), where('id', '==', shareId));
+  }, [firestore, shareId]);
 
   const { data: shareData, loading: shareLoading } = useCollection<SharedReport>(shareQuery);
   const shareInfo = useMemo(() => shareData?.[0], [shareData]);
@@ -160,11 +161,11 @@ export default function SharedReportPage({ params }: { params: { shareId: string
                                     <div key={assignee.id} className="flex items-center space-x-4">
                                         <Avatar>
                                             <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
-                                            <AvatarFallback>{assignee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                            <AvatarFallback>{assignee.name ? assignee.name.split(' ').map(n => n[0]).join('') : 'U'}</AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <p className="text-sm font-medium leading-none">{assignee.name}</p>
-                                            <p className="text-sm text-muted-foreground">{assignee.email}</p>
+                                            <p className="text-sm font-medium leading-none">{assignee.name || assignee.email}</p>
+                                            {assignee.name && assignee.email && <p className="text-sm text-muted-foreground">{assignee.email}</p>}
                                         </div>
                                     </div>
                                 ))}

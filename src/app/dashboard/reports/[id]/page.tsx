@@ -24,6 +24,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [assignMode, setAssignMode] = useState<'assign' | 'transfer' | 'add'>('assign');
   const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
@@ -35,8 +36,8 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
 
   const reportRef = useMemo(() => {
     if (!firestore) return null;
-    return doc(firestore, 'reports', params.id);
-  }, [firestore, params.id]);
+    return doc(firestore, 'reports', id);
+  }, [firestore, id]);
   
   const { data: report, loading } = useDoc<Report>(reportRef);
 
@@ -55,7 +56,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
 
   const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
   
- const handleSendMessage = async () => {
+ const handleSendMessage = () => {
     if (!message.trim() || !firestore || !report?.docId || !user || !userData) return;
 
     const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
@@ -348,4 +349,3 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
   );
 }
 
-    

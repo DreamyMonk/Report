@@ -20,14 +20,15 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { cn } from "@/lib/utils";
 
 export default function TrackReportDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [message, setMessage] = useState('');
   const { toast } = useToast();
   const firestore = useFirestore();
 
   const reportsQuery = useMemo(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'reports'), where('id', '==', params.id.toUpperCase()));
-  }, [firestore, params.id]);
+    return query(collection(firestore, 'reports'), where('id', '==', id.toUpperCase()));
+  }, [firestore, id]);
   
   const statusesQuery = useMemo(() => {
     if(!firestore) return null;
@@ -47,7 +48,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
   const { data: messages } = useCollection<Message>(messagesQuery);
 
 
- const handleSendMessage = async () => {
+ const handleSendMessage = () => {
     if (!message.trim() || !firestore || !report?.docId) return;
 
     const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
@@ -260,5 +261,3 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     </div>
   );
 }
-
-    
