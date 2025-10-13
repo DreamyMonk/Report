@@ -21,7 +21,7 @@ export type Report = {
   category: string;
   submittedAt: Timestamp;
   status: string;
-  severity: "Low" | "Medium" | "High";
+  severity: "Low" | "Medium" | "High" | "Critical";
   assignees: User[] | null;
   submissionType: "anonymous" | "confidential";
   reporter?: {
@@ -29,10 +29,6 @@ export type Report = {
     email?: string;
     phone?: string;
   };
-  aiSummary?: string;
-  aiRiskAssessment?: string;
-  aiSuggestedSteps?: string[];
-  aiReasoning?: string;
 };
 
 export type Message = {

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud, FileX2, Fingerprint, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud, FileX2, Fingerprint, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
 import { format } from "date-fns";
 import { useFirestore } from "@/firebase";
 import { Report, Message, User as AppUser, CaseStatus, Attachment } from "@/lib/types";
@@ -240,7 +240,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     }
   };
 
-  const handleSeverityChange = async (severity: "Low" | "Medium" | "High") => {
+  const handleSeverityChange = async (severity: "Low" | "Medium" | "High" | "Critical") => {
     if (!firestore || !report?.docId || !userData || !user) return;
 
     try {
@@ -454,23 +454,30 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                 <span className="text-muted-foreground flex items-center gap-2"><Shield className="h-4 w-4"/>Severity</span>
                 <Select
                   value={report.severity}
-                  onValueChange={(value: "Low" | "Medium" | "High") => handleSeverityChange(value)}
+                  onValueChange={(value: "Low" | "Medium" | "High" | "Critical") => handleSeverityChange(value)}
                   disabled={isResolved}
                 >
                   <SelectTrigger
                     className={cn("w-[120px] justify-between capitalize",
-                        report.severity === 'High' && 'bg-destructive text-destructive-foreground',
-                        report.severity === 'Medium' && 'bg-secondary',
+                        report.severity === 'Critical' && 'bg-destructive text-destructive-foreground',
+                        report.severity === 'High' && 'bg-orange-500 text-white',
+                        report.severity === 'Medium' && 'bg-yellow-500 text-white',
                         report.severity === 'Low' && 'bg-muted text-muted-foreground'
                     )}
                   >
                     <SelectValue placeholder="Select severity" />
                   </SelectTrigger>
                   <SelectContent>
-                      <SelectItem value="Low">
+                      <SelectItem value="Critical">
                          <div className="flex items-center gap-2">
-                            <ShieldCheck className="h-4 w-4 text-green-500" />
-                            Low
+                            <ShieldAlert className="h-4 w-4 text-red-500" />
+                            Critical
+                          </div>
+                      </SelectItem>
+                      <SelectItem value="High">
+                         <div className="flex items-center gap-2">
+                            <ShieldX className="h-4 w-4 text-orange-500" />
+                            High
                           </div>
                       </SelectItem>
                       <SelectItem value="Medium">
@@ -479,10 +486,10 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                             Medium
                           </div>
                       </SelectItem>
-                      <SelectItem value="High">
+                      <SelectItem value="Low">
                          <div className="flex items-center gap-2">
-                            <ShieldAlert className="h-4 w-4 text-red-500" />
-                            High
+                            <ShieldCheck className="h-4 w-4 text-green-500" />
+                            Low
                           </div>
                       </SelectItem>
                   </SelectContent>

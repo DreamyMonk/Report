@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CaretSortIcon } from "@radix-ui/react-icons";
 import { ReportTableActions } from "./reports-table-actions";
-import { Shield, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Shield, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
 import { format } from "date-fns";
 
 export const getColumns = (statuses: CaseStatus[]): ColumnDef<Report>[] => [
@@ -30,11 +30,33 @@ export const getColumns = (statuses: CaseStatus[]): ColumnDef<Report>[] => [
     header: "Severity",
     cell: ({ row }) => {
       const severity = row.getValue("severity") as string;
-      const variant: "destructive" | "secondary" | "default" = 
-        severity === "High" ? "destructive" : severity === "Medium" ? "secondary" : "default";
-      const Icon = severity === "High" ? ShieldAlert : severity === "Medium" ? Shield : ShieldCheck;
       
-      return <Badge variant={variant} className="capitalize gap-1.5"><Icon className="h-3 w-3" />{severity}</Badge>;
+      let variant: "destructive" | "secondary" | "default";
+      let Icon;
+
+      switch (severity) {
+        case "Critical":
+          variant = "destructive";
+          Icon = ShieldAlert;
+          break;
+        case "High":
+          variant = "destructive";
+          Icon = ShieldX;
+          break;
+        case "Medium":
+          variant = "secondary";
+          Icon = Shield;
+          break;
+        case "Low":
+        default:
+          variant = "default";
+          Icon = ShieldCheck;
+          break;
+      }
+      
+      const badgeStyle = severity === 'High' ? { backgroundColor: 'rgb(234 88 12)', color: 'white' } : {};
+
+      return <Badge variant={variant} style={badgeStyle} className="capitalize gap-1.5"><Icon className="h-3 w-3" />{severity}</Badge>;
     },
   },
   {
