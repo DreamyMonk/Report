@@ -153,7 +153,7 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
       });
 
       if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+        throw new Error(`Upload failed: ${await uploadResponse.text()}`);
       }
 
       const attachmentsCollection = collection(firestore, 'reports', report.docId, 'attachments');
