@@ -8,7 +8,7 @@ import { Calendar, User, Shield, Tag, FileText, Bot, Clock, AlertTriangle, Users
 import { format } from "date-fns";
 import { useFirestore } from "@/firebase";
 import { Report, SharedReport } from "@/lib/types";
-import { collection, doc, query, where, onSnapshot } from "firebase/firestore";
+import { collection, doc, query, where, onSnapshot, getDoc } from "firebase/firestore";
 import { useMemo, useState, useEffect } from "react";
 import { Logo } from "@/components/icons/logo";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -16,79 +16,72 @@ import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function SharedReportPage({ params: { shareId } }: { params: { shareId: string } }) {
   const firestore = useFirestore();
-  const router = useRouter();
-
   const [shareInfo, setShareInfo] = useState<SharedReport | null>(null);
   const [report, setReport] = useState<Report | null>(null);
-  const [shareLoading, setShareLoading] = useState(true);
-  const [reportLoading, setReportLoading] = useState(true);
-  
-  const shareQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'shared_reports'), where('id', '==', shareId));
-  }, [firestore, shareId]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!shareQuery) {
-        setShareLoading(false);
-        return;
+    if (!firestore) {
+      setLoading(false);
+      return;
     }
-    const unsubscribe = onSnapshot(shareQuery, (snapshot) => {
-        if (!snapshot.empty) {
-            setShareInfo(snapshot.docs[0].data() as SharedReport);
-        } else {
-            setShareInfo(null);
-        }
-        setShareLoading(false);
-    }, (error) => {
-        console.error("Error fetching share info:", error);
-        const permissionError = new FirestorePermissionError({
-          path: (shareQuery as any)._query.path.toString(),
-          operation: 'list',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        setShareLoading(false);
-    });
 
-    return () => unsubscribe();
-  }, [shareQuery]);
+    setLoading(true);
+    const shareQuery = query(collection(firestore, 'shared_reports'), where('id', '==', shareId));
 
-  const isExpired = shareInfo ? new Date() > shareInfo.expiresAt.toDate() : false;
-
-  const reportRef = useMemo(() => {
-    if (!firestore || !shareInfo?.reportId || isExpired) return null;
-    return doc(firestore, 'reports', shareInfo.reportId);
-  }, [firestore, shareInfo, isExpired]);
-
-
-  useEffect(() => {
-    if (!reportRef) {
-        setReportLoading(false);
+    const unsubscribeShare = onSnapshot(shareQuery, (snapshot) => {
+      if (snapshot.empty) {
+        setError("This link is invalid or has been removed.");
+        setLoading(false);
         return;
-    }
-    setReportLoading(true);
-    const unsubscribe = onSnapshot(reportRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setReport({ docId: docSnap.id, ...docSnap.data() } as Report);
-      } else {
-        setReport(null);
       }
-      setReportLoading(false);
-    }, (error) => {
-        console.error("Error fetching shared report:", error);
+
+      const shareData = snapshot.docs[0].data() as SharedReport;
+      
+      if (new Date() > shareData.expiresAt.toDate()) {
+        setError("This link has expired.");
+        setLoading(false);
+        return;
+      }
+      
+      setShareInfo(shareData);
+
+      const reportRef = doc(firestore, 'reports', shareData.reportId);
+      const unsubscribeReport = onSnapshot(reportRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setReport({ docId: docSnap.id, ...docSnap.data() } as Report);
+        } else {
+          setReport(null);
+        }
+        setLoading(false);
+      }, (reportError) => {
+        console.error("Error fetching shared report:", reportError);
         const permissionError = new FirestorePermissionError({
           path: reportRef.path,
           operation: 'get',
         });
         errorEmitter.emit('permission-error', permissionError);
-        setReportLoading(false);
+        setError("Could not load the report details.");
+        setLoading(false);
+      });
+
+      return () => unsubscribeReport();
+
+    }, (shareError) => {
+      console.error("Error fetching share info:", shareError);
+      setError("Could not verify the share link.");
+      const permissionError = new FirestorePermissionError({
+        path: 'shared_reports',
+        operation: 'list',
+      });
+      errorEmitter.emit('permission-error', permissionError);
+      setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [reportRef]);
-  
-  const loading = shareLoading || reportLoading;
-  
+    return () => unsubscribeShare();
+  }, [firestore, shareId]);
+
   if (loading) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/50">
@@ -97,7 +90,7 @@ export default function SharedReportPage({ params: { shareId } }: { params: { sh
     )
   }
   
-  if (!shareInfo || isExpired) {
+  if (error) {
      return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/50 p-4">
              <Card className="w-full max-w-lg text-center">
@@ -108,7 +101,7 @@ export default function SharedReportPage({ params: { shareId } }: { params: { sh
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground">The link you are trying to access is either invalid or has expired. Please request a new link from the case manager.</p>
+                    <p className="text-muted-foreground">{error}</p>
                 </CardContent>
              </Card>
         </div>
@@ -134,7 +127,7 @@ export default function SharedReportPage({ params: { shareId } }: { params: { sh
             <div className="space-y-6">
                 <div className="p-4 rounded-lg bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 flex items-center gap-3">
                     <Clock className="h-5 w-5"/>
-                    <p className="text-sm">This is a secure, read-only view. This link will expire on {format(shareInfo.expiresAt.toDate(), "PPPp")}.</p>
+                    <p className="text-sm">This is a secure, read-only view. This link will expire on {format(shareInfo!.expiresAt.toDate(), "PPPp")}.</p>
                 </div>
                 <div>
                     <div className="flex items-center gap-2 mb-2">
