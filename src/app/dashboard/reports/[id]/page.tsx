@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud, FileX2, Fingerprint, ShieldAlert, ShieldCheck, ShieldX, Crown } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud, FileX2, Fingerprint, ShieldAlert, ShieldCheck, ShieldX, Crown, View } from "lucide-react";
 import { format } from "date-fns";
 import { useFirestore } from "@/firebase";
 import { Report, Message, User as AppUser, CaseStatus, Attachment } from "@/lib/types";
@@ -25,6 +25,7 @@ import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { getSignedR2Url } from "@/lib/actions";
 import { CloseCaseDialog } from "@/components/dashboard/close-case-dialog";
+import { ViewSecretCodeDialog } from "@/components/dashboard/view-secret-code-dialog";
 
 
 export default function ReportDetailPage({ params: { id } }: { params: { id: string } }) {
@@ -32,6 +33,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   const [assignMode, setAssignMode] = useState<'assign' | 'transfer' | 'add'>('assign');
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isCloseCaseDialogOpen, setIsCloseCaseDialogOpen] = useState(false);
+  const [isSecretCodeDialogOpen, setIsSecretCodeDialogOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -431,7 +433,14 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
             <CardContent className="space-y-4 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-2"><Fingerprint className="h-4 w-4"/>Case ID</span>
-                <span className="font-medium font-mono">{report.caseId}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium font-mono">{report.caseId}</span>
+                  {isInternal && (
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsSecretCodeDialogOpen(true)}>
+                      <View className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-2"><FileText className="h-4 w-4"/>Status</span>
@@ -647,6 +656,11 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
         open={isCloseCaseDialogOpen} 
         onOpenChange={setIsCloseCaseDialogOpen} 
         report={report} 
+      />
+       <ViewSecretCodeDialog
+        open={isSecretCodeDialogOpen}
+        onOpenChange={setIsSecretCodeDialogOpen}
+        trackingId={report.id}
       />
     </div>
   );
