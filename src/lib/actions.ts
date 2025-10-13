@@ -170,6 +170,18 @@ export async function createAdminUser(prevState: any, formData: FormData) {
   }
 }
 
+export async function hasAdminUser(): Promise<boolean> {
+    try {
+        const { db } = getFirebaseAdmin();
+        const adminSnapshot = await db.collection('users').where('role', '==', 'admin').limit(1).get();
+        return !adminSnapshot.empty;
+    } catch (error) {
+        console.error("Error checking for admin user:", error);
+        // In case of an error, assume an admin exists to prevent showing the setup page unnecessarily.
+        return true;
+    }
+}
+
 export async function updateUser(prevState: any, formData: FormData) {
     try {
         const { auth, db } = getFirebaseAdmin();
@@ -315,7 +327,7 @@ export async function initializeData(db: Firestore) {
 
   const categoriesCollection = db.collection('categories');
   const categoriesSnapshot = await categoriesCollection.get();
-  if (categoriesSnapshot.empty.get()) {
+  if (categoriesSnapshot.empty) {
     const defaultCategories = [
       { label: 'Financial Misconduct' },
       { label: 'Harassment or Discrimination' },
