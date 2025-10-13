@@ -426,8 +426,10 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                           <CommandItem
                             key={status.docId}
                             value={status.docId}
-                            onSelect={(currentValue) => {
-                                handleStatusChange(currentValue)
+                            onSelect={() => {
+                                if (status.docId) {
+                                    handleStatusChange(status.docId);
+                                }
                             }}
                           >
                             <div className="flex items-center gap-2">
@@ -579,5 +581,3 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     </div>
   );
 }
-
-    
