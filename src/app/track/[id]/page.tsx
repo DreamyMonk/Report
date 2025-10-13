@@ -273,7 +273,6 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
   const statusInfo: { [key: string]: { icon: React.ElementType, text: string }} = {
     New: { icon: FileText, text: "Report submitted and pending review." },
     "In Progress": { icon: Hourglass, text: "An investigation is currently underway." },
-    "Case Officer Assigned": { icon: UserCheck, text: "A case officer has been assigned and is reviewing the report." },
     Resolved: { icon: CheckCircle, text: "The investigation is complete and the case is closed." },
     Dismissed: { icon: XCircle, text: "The report has been reviewed and dismissed." },
     "Forwarded to Upper Management": { icon: Landmark, text: "This case has been forwarded for further review."}
@@ -281,7 +280,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
 
   const isCaseAssigned = report.assignees && report.assignees.length > 0;
   
-  const customStatus = (report.status !== 'New' && report.status !== 'In Progress' && report.status !== 'Case Officer Assigned') ? report.status : null;
+  const customStatus = (report.status !== 'New' && report.status !== 'In Progress') ? report.status : null;
 
 
   const currentStatusInfo = statusInfo[report.status] || { icon: Hourglass, text: "The status has been updated."};
@@ -318,19 +317,19 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                                 </div>
                               )}
                               
-                              {isCaseAssigned && (
+                              {isCaseAssigned && !customStatus && (
                                 <div className="relative mb-8">
                                     <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: statuses?.find(s => s.label === 'In Progress')?.color || '#f97316' }}></div>
                                     <div className="pl-6">
-                                    <p className="font-semibold flex items-center gap-2"><UserCheck className="h-4 w-4" />Case Officer Assigned</p>
-                                    <p className="text-sm text-muted-foreground">A case officer has been assigned and is reviewing the report.</p>
+                                    <p className="font-semibold flex items-center gap-2"><Hourglass className="h-4 w-4" />In Progress</p>
+                                    <p className="text-sm text-muted-foreground">An investigation is currently underway.</p>
                                      <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
                                     </div>
                                 </div>
                               )}
                               
                                <div className="relative">
-                                <div className="absolute left-0 top-1 w-3 h-3 rounded-full bg-border"></div>
+                                <div className="absolute left-0 top-1 w-3 h-3 rounded-full bg-blue-500"></div>
                                 <div className="pl-6">
                                   <p className="font-semibold flex items-center gap-2"><FileText className="h-4 w-4" />Report Submitted</p>
                                   <p className="text-sm text-muted-foreground">The initial report was received and is awaiting assignment.</p>
