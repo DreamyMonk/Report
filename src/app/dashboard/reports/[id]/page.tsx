@@ -426,11 +426,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                           <CommandItem
                             key={status.docId}
                             value={status.docId}
-                            onSelect={() => {
-                                if (status.docId) {
-                                    handleStatusChange(status.docId);
-                                }
-                            }}
+                            onSelect={handleStatusChange}
                           >
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }}></div>
