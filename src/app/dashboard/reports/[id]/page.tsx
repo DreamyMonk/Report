@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud, FileX2, Fingerprint } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud, FileX2, Fingerprint, ShieldAlert, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { useFirestore } from "@/firebase";
 import { Report, Message, User as AppUser, CaseStatus, Attachment } from "@/lib/types";
@@ -240,6 +240,33 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     }
   };
 
+  const handleSeverityChange = async (severity: "Low" | "Medium" | "High") => {
+    if (!firestore || !report?.docId || !userData || !user) return;
+
+    try {
+      const reportRef = doc(firestore, 'reports', report.docId);
+      await updateDoc(reportRef, { severity });
+
+      await addDoc(collection(firestore, 'audit_logs'), {
+        reportId: report.docId,
+        actor: { id: user.uid, name: userData.name },
+        action: `changed severity from "${report.severity}" to "${severity}"`,
+        timestamp: serverTimestamp(),
+      });
+
+      toast({
+        title: "Severity Updated",
+        description: `Report severity changed to ${severity}.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: error.message || "Could not update severity.",
+      });
+    }
+  };
+
   
   const handleStatusChange = async (statusId: string) => {
     if (!firestore || !report?.docId || !statuses || !userData || !user) return;
@@ -308,7 +335,6 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-            <Badge variant={report.severity === 'High' ? 'destructive' : report.severity === 'Medium' ? 'secondary' : 'default'} className="capitalize">{report.severity} Severity</Badge>
             <Badge variant="outline" className="capitalize flex items-center gap-1">
                 {isConfidential ? <Lock className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
                 {report.submissionType}
@@ -317,9 +343,6 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
             <h1 className="font-headline text-4xl font-bold break-words">{report.title}</h1>
         </div>
         <div className="flex items-center gap-2 ml-4 shrink-0">
-            <Button variant="destructive" onClick={() => setIsCloseCaseDialogOpen(true)} disabled={isResolved}>
-                <FileX2 className="mr-2 h-4 w-4" /> Close Case
-            </Button>
             <Button variant="outline" onClick={() => setIsShareDialogOpen(true)}>
                 <Share2 className="mr-2 h-4 w-4" /> Share
             </Button>
@@ -424,6 +447,44 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                           </div>
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+               <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center gap-2"><Shield className="h-4 w-4"/>Severity</span>
+                <Select
+                  value={report.severity}
+                  onValueChange={(value: "Low" | "Medium" | "High") => handleSeverityChange(value)}
+                  disabled={isResolved}
+                >
+                  <SelectTrigger
+                    className={cn("w-[120px] justify-between capitalize",
+                        report.severity === 'High' && 'bg-destructive text-destructive-foreground',
+                        report.severity === 'Medium' && 'bg-secondary',
+                        report.severity === 'Low' && 'bg-muted text-muted-foreground'
+                    )}
+                  >
+                    <SelectValue placeholder="Select severity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="Low">
+                         <div className="flex items-center gap-2">
+                            <ShieldCheck className="h-4 w-4 text-green-500" />
+                            Low
+                          </div>
+                      </SelectItem>
+                      <SelectItem value="Medium">
+                         <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-yellow-500" />
+                            Medium
+                          </div>
+                      </SelectItem>
+                      <SelectItem value="High">
+                         <div className="flex items-center gap-2">
+                            <ShieldAlert className="h-4 w-4 text-red-500" />
+                            High
+                          </div>
+                      </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
