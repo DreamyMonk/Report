@@ -250,16 +250,16 @@ export async function inviteUser(prevState: any, formData: FormData) {
 export async function deleteUser(prevState: any, formData: FormData) {
     try {
         const { auth, db } = getFirebaseAdmin();
-        const userId = formData.get('userId') as string;
+        const docId = formData.get('docId') as string;
         const userUid = formData.get('userUid') as string;
 
 
-        if (!userId || !userUid) {
+        if (!docId || !userUid) {
             return { message: 'User ID is missing.', success: false };
         }
 
         await auth.deleteUser(userUid);
-        await db.collection('users').doc(userId).delete();
+        await db.collection('users').doc(docId).delete();
 
         revalidatePath('/dashboard/users');
         return { message: 'User has been successfully removed.', success: true };
@@ -351,5 +351,3 @@ export async function initializeData(db: Firestore) {
      console.log('Seeded default content.');
   }
 }
-
-    
