@@ -6,8 +6,11 @@ import {
   DocumentReference,
   DocumentData,
   FirestoreError,
+  getDoc,
 } from 'firebase/firestore';
 import { useFirestore } from '../provider';
+import { errorEmitter } from '../error-emitter';
+import { FirestorePermissionError } from '../errors';
 
 export interface UseDocOptions {
   listen: boolean;
@@ -26,43 +29,66 @@ export function useDoc<T>(
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | null>(null);
 
-  const docRefRef = useRef(pathOrRef);
-  if (JSON.stringify(docRefRef.current) !== JSON.stringify(pathOrRef)) {
-    docRefRef.current = pathOrRef;
+  // Use a ref to store the string representation of the path for comparison
+  const pathRef = useRef<string | null>(null);
+  const newPath = pathOrRef ? (typeof pathOrRef === 'string' ? pathOrRef : pathOrRef.path) : null;
+
+  if (newPath !== pathRef.current) {
+      pathRef.current = newPath;
   }
 
   useEffect(() => {
-    if (!firestore || !docRefRef.current) {
+    if (!firestore || !pathRef.current) {
       setLoading(false);
       return;
     }
 
-    let docRef: DocumentReference;
-    if (typeof docRefRef.current === 'string') {
-      docRef = doc(firestore, docRefRef.current);
+    const docRef: DocumentReference = doc(firestore, pathRef.current);
+
+    if (options.listen) {
+      const unsubscribe = onSnapshot(
+        docRef,
+        (docSnapshot) => {
+          if (docSnapshot.exists()) {
+            setData({ docId: docSnapshot.id, ...docSnapshot.data() } as T);
+          } else {
+            setData(null);
+          }
+          setLoading(false);
+          setError(null);
+        },
+        (err: FirestoreError) => {
+            const permissionError = new FirestorePermissionError({
+              path: docRef.path,
+              operation: 'get',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            setError(err);
+            setLoading(false);
+        }
+      );
+      return () => unsubscribe();
     } else {
-      docRef = docRefRef.current;
+        setLoading(true);
+        getDoc(docRef).then((docSnapshot) => {
+             if (docSnapshot.exists()) {
+                setData({ docId: docSnapshot.id, ...docSnapshot.data() } as T);
+             } else {
+                setData(null);
+             }
+             setLoading(false);
+        }).catch((err) => {
+            const permissionError = new FirestorePermissionError({
+              path: docRef.path,
+              operation: 'get',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            setError(err);
+            setLoading(false);
+        });
     }
 
-    const unsubscribe = onSnapshot(
-      docRef,
-      (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          setData({ docId: docSnapshot.id, ...docSnapshot.data() } as T);
-        } else {
-          setData(null);
-        }
-        setLoading(false);
-      },
-      (err: FirestoreError) => {
-        console.error(err);
-        setError(err);
-        setLoading(false);
-      }
-    );
+  }, [firestore, pathRef.current, options.listen]);
 
-    return () => unsubscribe();
-  }, [firestore, docRefRef]);
-
-  return { data, loading, error, firestore };
+  return { data, loading, error };
 }
