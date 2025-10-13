@@ -23,11 +23,15 @@ export type Report = {
   status: string;
   severity: "Low" | "Medium" | "High" | "Critical";
   assignees: User[] | null;
-  submissionType: "anonymous" | "confidential";
+  submissionType: "anonymous" | "confidential" | "internal";
   reporter?: {
     name?: string;
     email?: string;
     phone?: string;
+  };
+  createdBy?: {
+    id: string;
+    name: string;
   };
 };
 

@@ -20,6 +20,7 @@ import {
   History,
   ChevronLeft,
   Archive,
+  PlusCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,6 +32,7 @@ import { ForcePasswordChangeDialog } from "@/components/dashboard/force-password
 const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
     { href: "/dashboard/reports", icon: FileText, label: "All Reports" },
+    { href: "/dashboard/create", icon: PlusCircle, label: "Create Case" },
     { href: "/dashboard/users", icon: Users, label: "Users" },
     { href: "/dashboard/audit-log", icon: History, label: "Audit Log" },
     { href: "/dashboard/archive", icon: Archive, label: "Archive" },

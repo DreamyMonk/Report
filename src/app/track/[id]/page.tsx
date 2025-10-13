@@ -272,6 +272,15 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
 
   const isCaseAssigned = report.status === 'In Progress' || report.status === 'Resolved';
   const isResolved = report.status === 'Resolved';
+  const isInternal = report.submissionType === 'internal';
+  const isInteractionDisabled = isResolved || isInternal;
+  
+  let interactionDisabledMessage = '';
+  if (isResolved) {
+    interactionDisabledMessage = 'This case is resolved. The communication channel is closed.';
+  } else if (isInternal) {
+    interactionDisabledMessage = 'This is an internally created case. Communication from this page is disabled.';
+  }
   
   const currentStatusInfo = statuses.find(s => s.label === report.status);
 
@@ -330,7 +339,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                     <Card>
                         <CardHeader>
                             <CardTitle>Communication Channel</CardTitle>
-                            <CardDescription>{isResolved ? 'This case is resolved. The chat is closed.' : 'Securely communicate with the case officer. Your identity remains protected.'}</CardDescription>
+                            <CardDescription>{isInteractionDisabled ? interactionDisabledMessage : 'Securely communicate with the case officer. Your identity remains protected.'}</CardDescription>
                         </CardHeader>
                         <CardContent>
                              <div className="space-y-4">
@@ -366,9 +375,9 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                                 </div>
 
                                 <div className="pt-4 space-y-3 border-t">
-                                    <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved} />
+                                    <Textarea placeholder={interactionDisabledMessage || "Type your message..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isInteractionDisabled} />
                                      <div className="flex justify-end items-center">
-                                        <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isResolved || isUploading}>
+                                        <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isInteractionDisabled || isUploading}>
                                             <Send className="mr-2 h-4 w-4"/>
                                             Send Message
                                         </Button>
@@ -470,13 +479,13 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                           <div className="mt-4 pt-4 border-t">
                               <Label htmlFor="reporter-file-upload" className="text-sm font-medium mb-2 block">Add Attachment</Label>
                                <div className="flex items-center gap-2">
-                                  <Input id="reporter-file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isUploading || isResolved} />
-                                  <Label htmlFor="reporter-file-upload" className={cn("flex-grow min-w-0", !fileToUpload && "text-muted-foreground")}>
+                                  <Input id="reporter-file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isUploading || isInteractionDisabled} />
+                                  <Label htmlFor="reporter-file-upload" className={cn("flex-grow min-w-0", !fileToUpload && "text-muted-foreground", isInteractionDisabled && "cursor-not-allowed opacity-50")}>
                                       <div className="border-2 border-dashed rounded-md px-3 py-2 text-sm cursor-pointer text-center hover:bg-muted truncate">
                                       {fileToUpload ? fileToUpload.name : 'Click to select a file'}
                                       </div>
                                   </Label>
-                                  <Button size="sm" onClick={handleUploadAttachment} disabled={!fileToUpload || isUploading || isResolved}>
+                                  <Button size="sm" onClick={handleUploadAttachment} disabled={!fileToUpload || isUploading || isInteractionDisabled}>
                                       {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4"/>}
                                       {isUploading ? 'Uploading...' : 'Upload'}
                                   </Button>

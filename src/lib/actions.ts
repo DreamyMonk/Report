@@ -36,6 +36,86 @@ function generateCaseId() {
     return `WBS-${nanoid(8).toUpperCase()}`;
 }
 
+export async function createInternalCase(prevState: any, formData: FormData) {
+    if (!prevState) {
+      return { message: null, success: false, reportId: null };
+    }
+    const { auth, db } = getFirebaseAdmin();
+    const title = formData.get('title') as string;
+    const content = formData.get('content') as string;
+    const category = formData.get('category') as string;
+    const severity = formData.get('severity') as "Low" | "Medium" | "High" | "Critical";
+    const creatorId = formData.get('creatorId') as string;
+    
+    if (!title || !content || !category || !severity || !creatorId) {
+      return { 
+        message: "Please fill out all required fields.",
+        success: false,
+        reportId: null
+      };
+    }
+
+    try {
+        const creator = await auth.getUser(creatorId);
+        if (!creator) {
+            throw new Error("Creator user not found.");
+        }
+
+        const trackingId = generateTrackingId();
+        const caseId = generateCaseId();
+
+        const creatorData = {
+            id: creator.uid,
+            name: creator.displayName || creator.email!,
+            email: creator.email!,
+            avatarUrl: creator.photoURL || `https://picsum.photos/seed/${creator.uid}/100/100`,
+        };
+
+        const reportData: Omit<Report, 'docId' | 'submittedAt'> = {
+            id: trackingId,
+            caseId: caseId,
+            title,
+            content,
+            category,
+            submissionType: 'internal',
+            status: 'In Progress',
+            severity,
+            assignees: [creatorData],
+            createdBy: {
+                id: creator.uid,
+                name: creator.displayName || creator.email!,
+            },
+        };
+        
+        const reportRef = await db.collection('reports').add({
+            ...reportData,
+            submittedAt: new Date()
+        });
+
+        await db.collection('audit_logs').add({
+            reportId: reportRef.id,
+            actor: { id: creator.uid, name: creator.displayName || 'System' },
+            action: 'created an internal case',
+            timestamp: new Date()
+        });
+        
+        revalidatePath('/dashboard/reports');
+        return {
+            message: "The internal case has been created.",
+            success: true,
+            reportId: reportRef.id,
+        };
+
+    } catch (e: any) {
+        console.error('Case Creation Error:', e);
+        return {
+            message: e.message || 'An unexpected error occurred. Please try again later.',
+            success: false,
+            reportId: null
+        };
+    }
+}
+
 
 export async function submitReport(prevState: any, formData: FormData) {
     if (!prevState) {

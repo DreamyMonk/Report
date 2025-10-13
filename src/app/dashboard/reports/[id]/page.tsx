@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud, FileX2, Fingerprint, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud, FileX2, Fingerprint, ShieldAlert, ShieldCheck, ShieldX, Crown } from "lucide-react";
 import { format } from "date-fns";
 import { useFirestore } from "@/firebase";
 import { Report, Message, User as AppUser, CaseStatus, Attachment } from "@/lib/types";
@@ -328,7 +328,11 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   }
 
   const isConfidential = report.submissionType === 'confidential';
+  const isInternal = report.submissionType === 'internal';
   const isResolved = report.status === 'Resolved';
+  const isChatDisabled = isResolved || isInternal;
+
+  const chatDisabledMessage = isResolved ? "This case is resolved. The chat is closed." : "This is an internally created case. The chat is disabled.";
 
 
   return (
@@ -337,7 +341,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
         <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
             <Badge variant="outline" className="capitalize flex items-center gap-1">
-                {isConfidential ? <Lock className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                {isConfidential ? <Lock className="h-3 w-3" /> : (isInternal ? <Bot className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />)}
                 {report.submissionType}
             </Badge>
             </div>
@@ -370,7 +374,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
           <Card>
             <CardHeader>
                 <CardTitle>Communication Channel</CardTitle>
-                <CardDescription>{isResolved ? 'This case is resolved. The chat is closed.' : 'Communicate with the reporter. Your messages will appear with your name and role.'}</CardDescription>
+                <CardDescription>{isChatDisabled ? chatDisabledMessage : 'Communicate with the reporter. Your messages will appear with your name and role.'}</CardDescription>
             </CardHeader>
             <CardContent>
                  <div className="space-y-4">
@@ -406,9 +410,9 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                     </div>
 
                     <div className="pt-4 space-y-3 border-t">
-                        <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message to the reporter..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved} />
+                        <Textarea placeholder={chatDisabledMessage} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isChatDisabled} />
                          <div className="flex justify-end items-center">
-                            <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isResolved || isUploading}>
+                            <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isChatDisabled || isUploading}>
                                 <Send className="mr-2 h-4 w-4"/>
                                 Send Message
                             </Button>
@@ -525,6 +529,12 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                   <span className="font-medium text-right break-words">{report.reporter.phone}</span>
                 </div>
               )}
+              {isInternal && report.createdBy?.name && (
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-muted-foreground flex items-center gap-2 shrink-0"><User className="h-4 w-4"/>Created By</span>
+                  <span className="font-medium text-right break-words">{report.createdBy.name}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -534,18 +544,22 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
             <CardContent>
               {report.assignees && report.assignees.length > 0 ? (
                  <div className="space-y-4">
-                    {report.assignees.map(assignee => (
-                        <div key={assignee.id} className="flex items-center space-x-4">
-                            <Avatar>
-                                <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
-                                <AvatarFallback>{assignee.name ? assignee.name.split(' ').map(n => n[0]).join('') : (assignee.email ? assignee.email.charAt(0).toUpperCase() : 'U')}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium leading-none break-words">{assignee.name || assignee.email}</p>
-                                {assignee.name && assignee.email && <p className="text-sm text-muted-foreground break-all">{assignee.email}</p>}
+                    {report.assignees.map(assignee => {
+                        const isCreator = report.createdBy?.id === assignee.id;
+                        return (
+                            <div key={assignee.id} className="flex items-center space-x-4">
+                                <Avatar>
+                                    <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
+                                    <AvatarFallback>{assignee.name ? assignee.name.split(' ').map(n => n[0]).join('') : (assignee.email ? assignee.email.charAt(0).toUpperCase() : 'U')}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium leading-none break-words">{assignee.name || assignee.email}</p>
+                                    {assignee.name && assignee.email && <p className="text-sm text-muted-foreground break-all">{assignee.email}</p>}
+                                </div>
+                                {isCreator && <Badge variant="secondary" className="gap-1.5"><Crown className="h-3 w-3" /> Creator</Badge>}
                             </div>
-                        </div>
-                    ))}
+                        )
+                    })}
                     <div className="flex flex-col gap-2 pt-4">
                         <Button variant="outline" className="w-full" onClick={() => openAssignDialog('transfer')} disabled={isResolved}>
                             <Replace className="mr-2 h-4 w-4" /> Transfer Case
