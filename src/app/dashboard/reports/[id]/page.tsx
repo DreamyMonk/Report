@@ -11,7 +11,7 @@ import { useCollection, useDoc, useFirestore } from "@/firebase";
 import { Report, Message, User as AppUser, CaseStatus } from "@/lib/types";
 import { collection, doc, query, orderBy, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { AssignCaseDialog } from "@/components/dashboard/assign-case-dialog";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/firebase/auth-provider";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -21,9 +21,6 @@ import { cn } from "@/lib/utils";
 import { ShareReportDialog } from "@/components/dashboard/share-report-dialog";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { createAgoraClient, createAgoraChannel } from "@/lib/agora-chat";
-import type { RtmChannel, RtmClient } from "agora-rtm-sdk";
-import { Timestamp } from "firebase/firestore";
 
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
@@ -35,11 +32,6 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
   const firestore = useFirestore();
   const { userData, user } = useAuth();
   const { toast } = useToast();
-  
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [agoraClient, setAgoraClient] = useState<RtmClient | null>(null);
-  const [agoraChannel, setAgoraChannel] = useState<RtmChannel | null>(null);
-
 
   const reportRef = useMemo(() => {
     if (!firestore) return null;
@@ -48,6 +40,14 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
   
   const { data: report, loading } = useDoc<Report>(reportRef);
 
+  const messagesQuery = useMemo(() => {
+    if (!firestore || !report?.docId) return null;
+    return query(collection(firestore, 'reports', report.docId, 'messages'), orderBy('sentAt', 'asc'));
+  }, [firestore, report?.docId]);
+
+  const { data: messages } = useCollection<Message>(messagesQuery);
+
+
   const statusesQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'statuses'), orderBy('label'));
@@ -55,56 +55,33 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
 
   const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
   
-  useEffect(() => {
-    if (!user || !report) return;
-
-    const client = createAgoraClient(user.uid);
-    setAgoraClient(client);
-
-    const handleMessage = (newMessage: Message) => {
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-    };
-
-    createAgoraChannel(client, report.docId!, handleMessage).then(channel => {
-        setAgoraChannel(channel);
-    });
-
-    return () => {
-        agoraChannel?.leave();
-        agoraClient?.logout();
-    };
-}, [user, report, agoraChannel, agoraClient]);
-
-
  const handleSendMessage = async () => {
-    if (!message.trim() || !agoraChannel || !user || !userData) return;
+    if (!message.trim() || !firestore || !report?.docId || !user || !userData) return;
 
-    const newMessage: Message = {
+    const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
+    
+    addDoc(messagesCollection, {
         content: message,
-        sentAt: Timestamp.now(),
+        sentAt: serverTimestamp(),
         sender: 'officer',
         senderInfo: {
             id: user.uid,
             name: userData.name || userData.email || 'Case Officer',
             avatarUrl: userData.avatarUrl || '',
         },
-    };
+    }).catch(async (serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: messagesCollection.path,
+        operation: 'create',
+        requestResourceData: { content: message },
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    });
 
-    try {
-        await agoraChannel.sendMessage({ text: JSON.stringify(newMessage) });
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-        setMessage('');
-        toast({
-            title: "Message sent!",
-        });
-    } catch (error) {
-        console.error("Agora send message failed", error);
-        toast({
-            variant: "destructive",
-            title: "Failed to send message",
-            description: "Could not send message via Agora RTM.",
-        });
-    }
+    setMessage('');
+    toast({
+        title: "Message sent!",
+    });
 };
 
   
@@ -204,36 +181,36 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
                 <CardDescription>{isResolved ? 'This case is resolved. The chat is closed.' : 'Communicate with the reporter. Your messages will appear with your name and role.'}</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="space-y-4">
-                   <div className="h-96 overflow-y-auto pr-4 space-y-4 border rounded-md p-4 bg-secondary/50 flex flex-col">
-                    {messages.map((msg, idx) => (
-                        <div key={idx} className={cn("flex items-end gap-3", msg.sender === 'officer' ? 'justify-end' : 'justify-start')}>
-                            {msg.sender === 'reporter' && (
-                                <Avatar className="h-8 w-8">
-                                    <AvatarFallback>
-                                        <User className="h-5 w-5"/>
-                                    </AvatarFallback>
-                                </Avatar>
-                            )}
-                            <div className={cn(
-                                "p-3 rounded-lg max-w-[80%]",
-                                msg.sender === 'officer' ? 'bg-primary text-primary-foreground' : 'bg-background border'
-                            )}>
-                                {msg.sender === 'officer' && <p className="text-sm font-semibold mb-1">{msg.senderInfo?.name || 'Case Officer'}</p>}
-                                <p className="text-sm">{msg.content}</p>
-                                <p className={cn("text-xs mt-1 text-right", msg.sender === 'officer' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
-                                    {msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : 'sending...'}
-                                </p>
+                 <div className="space-y-4">
+                    <div className="h-96 overflow-y-auto pr-4 space-y-4 border rounded-md p-4 bg-secondary/50 flex flex-col">
+                        {messages?.map((msg) => (
+                            <div key={msg.docId} className={cn("flex items-end gap-3", msg.sender === 'officer' ? 'justify-end' : 'justify-start')}>
+                                {msg.sender === 'reporter' && (
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarFallback>
+                                            <User className="h-5 w-5"/>
+                                        </AvatarFallback>
+                                    </Avatar>
+                                )}
+                                <div className={cn(
+                                    "p-3 rounded-lg max-w-[80%]",
+                                    msg.sender === 'officer' ? 'bg-primary text-primary-foreground' : 'bg-background border'
+                                )}>
+                                    {msg.sender === 'officer' && <p className="text-sm font-semibold mb-1">{msg.senderInfo?.name || 'Case Officer'}</p>}
+                                    <p className="text-sm">{msg.content}</p>
+                                    <p className={cn("text-xs mt-1 text-right", msg.sender === 'officer' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
+                                        {msg.sentAt ? format(msg.sentAt.toDate(), 'PPp') : 'sending...'}
+                                    </p>
+                                </div>
+                                {msg.sender === 'officer' && (
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage src={msg.senderInfo?.avatarUrl} />
+                                        <AvatarFallback>{msg.senderInfo?.name?.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                )}
                             </div>
-                             {msg.sender === 'officer' && (
-                                <Avatar className="h-8 w-8">
-                                    <AvatarImage src={msg.senderInfo?.avatarUrl} />
-                                    <AvatarFallback>{msg.senderInfo?.name?.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                            )}
-                        </div>
-                    ))}
-                    {messages.length === 0 && <p className="text-center text-muted-foreground m-auto">No messages yet.</p>}
+                        ))}
+                        {(!messages || messages.length === 0) && <p className="text-center text-muted-foreground m-auto">No messages yet.</p>}
                     </div>
 
                     <div className="pt-4 space-y-3">
@@ -370,3 +347,5 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
     </div>
   );
 }
+
+    

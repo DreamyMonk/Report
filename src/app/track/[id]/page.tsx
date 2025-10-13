@@ -13,24 +13,16 @@ import { Input } from "@/components/ui/input";
 import { useCollection, useFirestore } from "@/firebase";
 import { Report, Message, CaseStatus } from "@/lib/types";
 import { collection, doc, query, where, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { cn } from "@/lib/utils";
-import { createAgoraClient, createAgoraChannel } from "@/lib/agora-chat";
-import type { RtmChannel, RtmClient } from "agora-rtm-sdk";
-import { Timestamp } from "firebase/firestore";
 
 export default function TrackReportDetailPage({ params }: { params: { id: string } }) {
   const [message, setMessage] = useState('');
   const { toast } = useToast();
   const firestore = useFirestore();
-
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [agoraClient, setAgoraClient] = useState<RtmClient | null>(null);
-  const [agoraChannel, setAgoraChannel] = useState<RtmChannel | null>(null);
-
 
   const reportsQuery = useMemo(() => {
     if (!firestore) return null;
@@ -47,52 +39,36 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
   
   const report = useMemo(() => reports?.[0], [reports]);
 
-  useEffect(() => {
-    if (!report) return;
+  const messagesQuery = useMemo(() => {
+    if (!firestore || !report?.docId) return null;
+    return query(collection(firestore, 'reports', report.docId, 'messages'), orderBy('sentAt', 'asc'));
+  }, [firestore, report?.docId]);
 
-    // A unique ID for the reporter. In a real app, you might use a stable anonymous ID.
-    const reporterId = `reporter-${report.id}`;
-    const client = createAgoraClient(reporterId);
-    setAgoraClient(client);
-
-    const handleMessage = (newMessage: Message) => {
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-    };
-
-    createAgoraChannel(client, report.docId!, handleMessage).then(channel => {
-        setAgoraChannel(channel);
-    });
-
-    return () => {
-        agoraChannel?.leave();
-        agoraClient?.logout();
-    };
-}, [report, agoraChannel, agoraClient]);
+  const { data: messages } = useCollection<Message>(messagesQuery);
 
 
  const handleSendMessage = async () => {
-    if (!message.trim() || !agoraChannel) return;
+    if (!message.trim() || !firestore || !report?.docId) return;
 
-    const newMessage: Message = {
+    const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
+    
+    addDoc(messagesCollection, {
         content: message,
-        sentAt: Timestamp.now(),
+        sentAt: serverTimestamp(),
         sender: 'reporter',
-    };
+    }).catch(async (serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: messagesCollection.path,
+        operation: 'create',
+        requestResourceData: { content: message },
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    });
 
-    try {
-        await agoraChannel.sendMessage({ text: JSON.stringify(newMessage) });
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-        setMessage('');
-        toast({
-            title: "Message sent!",
-        });
-    } catch (error) {
-        console.error("Agora send message failed", error);
-        toast({
-            variant: "destructive",
-            title: "Failed to send message",
-        });
-    }
+    setMessage('');
+    toast({
+        title: "Message sent!",
+    });
 };
 
   if (reportsLoading) {
@@ -182,10 +158,10 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                             <CardDescription>{isResolved ? 'This case is resolved. The chat is closed.' : 'Securely communicate with the case officer. Your identity remains protected.'}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-4">
-                               <div className="h-96 overflow-y-auto pr-4 space-y-4 border rounded-md p-4 bg-background flex flex-col">
-                                {messages.map((msg, idx) => (
-                                     <div key={idx} className={cn("flex items-end gap-3", msg.sender === 'reporter' ? 'justify-end' : 'justify-start')}>
+                             <div className="space-y-4">
+                                <div className="h-96 overflow-y-auto pr-4 space-y-4 border rounded-md p-4 bg-background flex flex-col">
+                                {messages?.map((msg) => (
+                                     <div key={msg.docId} className={cn("flex items-end gap-3", msg.sender === 'reporter' ? 'justify-end' : 'justify-start')}>
                                         {msg.sender === 'officer' && (
                                             <Avatar className="h-8 w-8">
                                                 <AvatarImage src={msg.senderInfo?.avatarUrl} />
@@ -211,7 +187,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                                         )}
                                     </div>
                                 ))}
-                                {messages.length === 0 && <p className="text-center text-muted-foreground m-auto">No messages yet.</p>}
+                                {(!messages || messages.length === 0) && <p className="text-center text-muted-foreground m-auto">No messages yet.</p>}
                                 </div>
 
                                 <div className="pt-4 space-y-3 border-t">
@@ -284,3 +260,5 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     </div>
   );
 }
+
+    
