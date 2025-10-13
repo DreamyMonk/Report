@@ -8,17 +8,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Edit, PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { InviteUserDialog } from "@/components/dashboard/invite-user-dialog";
 import { useAuth } from "@/firebase/auth-provider";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { DotsVerticalIcon } from "@radix-ui/react-icons";
-import { RemoveUserDialog } from "@/components/dashboard/remove-user-dialog";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 
@@ -26,8 +18,6 @@ export default function UsersPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useAuth();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-  const [userToEdit, setUserToEdit] = useState<User | null>(null);
-  const [userToRemove, setUserToRemove] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
 
   const usersQuery = useMemo(() => {
@@ -47,16 +37,6 @@ export default function UsersPage() {
     });
     return () => unsubscribe();
   }, [usersQuery]);
-
-  const handleEdit = (user: User) => {
-    setUserToEdit(user);
-    setIsInviteDialogOpen(true);
-  };
-  
-  const handleCloseDialog = () => {
-    setUserToEdit(null);
-    setIsInviteDialogOpen(false);
-  }
 
   return (
     <div className="space-y-6">
@@ -85,31 +65,11 @@ export default function UsersPage() {
                         <p className="text-sm text-muted-foreground">{user.email}</p>
                         <div className="flex gap-2 items-center">
                             <Badge variant="outline" className="capitalize">{user.role || 'User'}</Badge>
+                             {currentUser?.uid === user.id && (
+                              <Badge variant="destructive">Logged In</Badge>
+                            )}
                         </div>
                         {user.designation && <p className="text-xs text-muted-foreground">{user.designation}, {user.department}</p>}
-                    </div>
-                     <div className="absolute top-2 right-2">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <DotsVerticalIcon />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(user)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                    onClick={() => setUserToRemove(user)}
-                                    disabled={currentUser?.uid === user.id}
-                                    className="text-destructive focus:text-destructive"
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Remove
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
                     </div>
                 </CardContent>
             </Card>
@@ -118,16 +78,8 @@ export default function UsersPage() {
       </Card>
       <InviteUserDialog 
         open={isInviteDialogOpen} 
-        onOpenChange={handleCloseDialog}
-        userToEdit={userToEdit}
+        onOpenChange={setIsInviteDialogOpen}
       />
-      {userToRemove && (
-        <RemoveUserDialog
-          open={!!userToRemove}
-          onOpenChange={() => setUserToRemove(null)}
-          user={userToRemove}
-        />
-      )}
     </div>
   )
 }
