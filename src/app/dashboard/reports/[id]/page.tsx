@@ -273,11 +273,6 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     const selectedStatus = statuses.find(s => s.docId === statusId);
     if (!selectedStatus) return;
 
-    if (selectedStatus.label === 'Resolved') {
-      setIsCloseCaseDialogOpen(true);
-      return;
-    }
-
     try {
       const reportRef = doc(firestore, 'reports', report.docId);
       await updateDoc(reportRef, {
@@ -345,6 +340,9 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
         <div className="flex items-center gap-2 ml-4 shrink-0">
             <Button variant="outline" onClick={() => setIsShareDialogOpen(true)}>
                 <Share2 className="mr-2 h-4 w-4" /> Share
+            </Button>
+             <Button variant="destructive" onClick={() => setIsCloseCaseDialogOpen(true)} disabled={isResolved}>
+                <FileX2 className="mr-2 h-4 w-4" /> Close Case
             </Button>
         </div>
       </div>
@@ -439,7 +437,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    {statuses?.map((status) => (
+                    {statuses?.filter(s => s.label !== 'Resolved').map((status) => (
                       <SelectItem key={status.docId} value={status.docId!}>
                          <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }}></div>
