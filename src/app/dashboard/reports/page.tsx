@@ -68,7 +68,7 @@ export default function AllReportsPage() {
               <TabsList>
                 <TabsTrigger value="All">All</TabsTrigger>
                 <TabsTrigger value="Report Submitted">New</TabsTrigger>
-                <TabsTrigger value="Case Officer Assigned">In Progress</TabsTrigger>
+                <TabsTrigger value="In Progress">In Progress</TabsTrigger>
                 <TabsTrigger value="Resolved">Resolved</TabsTrigger>
               </TabsList>
             </Tabs>

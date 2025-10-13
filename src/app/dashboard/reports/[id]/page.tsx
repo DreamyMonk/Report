@@ -314,9 +314,9 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
 
   const selectableStatuses = useMemo(() => {
     if (!statuses) return [];
-    // Only show statuses that are not one of the hardcoded default progression statuses
-    const progressionStatuses = ["Resolved", "Case Closed", "New", "In Progress"];
-    return statuses.filter(s => !progressionStatuses.includes(s.label));
+    // Exclude the final "Resolved" status and other obsolete statuses from the dropdown
+    const excludedStatuses = ["Resolved", "New", "Case Closed"];
+    return statuses.filter(s => !excludedStatuses.includes(s.label));
   }, [statuses]);
 
 
@@ -329,7 +329,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   }
 
   const isConfidential = report.submissionType === 'confidential';
-  const isResolved = report.status === 'Resolved' || report.status === 'Dismissed';
+  const isResolved = report.status === 'Resolved';
 
 
   return (

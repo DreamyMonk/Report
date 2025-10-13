@@ -389,7 +389,7 @@ export async function initializeData(db: Firestore) {
   if (statusesSnapshot.empty) {
     const defaultStatuses = [
       { label: 'Report Submitted', color: '#3b82f6', isDefault: true },
-      { label: 'Case Officer Assigned', color: '#f97316', isDefault: true },
+      { label: 'In Progress', color: '#f97316', isDefault: true },
       { label: 'Resolved', color: '#ef4444', isDefault: true },
     ];
     for (const status of defaultStatuses) {

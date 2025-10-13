@@ -37,7 +37,7 @@ export function OverviewCards() {
 
   const totalReports = reports?.length || 0;
   const newReports = reports?.filter(r => r.status === "Report Submitted").length || 0;
-  const inProgress = reports?.filter(r => r.status === "Case Officer Assigned").length || 0;
+  const inProgress = reports?.filter(r => r.status === "In Progress").length || 0;
   const resolved = reports?.filter(r => r.status === "Resolved").length || 0;
 
   return (

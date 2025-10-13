@@ -270,7 +270,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     notFound();
   }
 
-  const isCaseAssigned = report.assignees && report.assignees.length > 0;
+  const isCaseAssigned = report.status === 'In Progress' || report.status === 'Resolved';
   const isResolved = report.status === 'Resolved';
   
   const currentStatusInfo = statuses.find(s => s.label === report.status);
@@ -306,9 +306,9 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                               
                               {isCaseAssigned && !isResolved && (
                                 <div className="relative mb-8">
-                                    <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: statuses?.find(s => s.label === 'Case Officer Assigned')?.color || '#f97316' }}></div>
+                                    <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: statuses?.find(s => s.label === 'In Progress')?.color || '#f97316' }}></div>
                                     <div className="pl-6">
-                                    <p className="font-semibold flex items-center gap-2"><Hourglass className="h-4 w-4" />Case Officer Assigned</p>
+                                    <p className="font-semibold flex items-center gap-2"><Hourglass className="h-4 w-4" />In Progress</p>
                                     <p className="text-sm text-muted-foreground">A case officer has been assigned and an investigation is underway.</p>
                                      <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
                                     </div>

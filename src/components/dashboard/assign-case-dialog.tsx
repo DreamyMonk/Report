@@ -67,7 +67,7 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
 
   const dialogTitle = mode === 'assign' ? 'Assign Case' : mode === 'transfer' ? 'Transfer Case' : 'Add Assignees';
   const dialogDescription = mode === 'assign' 
-    ? "Select one or more case officers to investigate this report. The status will be changed to 'Case Officer Assigned'." 
+    ? "Select one or more case officers to investigate this report. The status will be changed to 'In Progress'." 
     : mode === 'transfer' 
     ? "Select new case officers. The previous assignees will be replaced." 
     : "Select additional case officers to add to this report.";
@@ -139,7 +139,7 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
       if (mode === 'assign') {
         finalAssignees = newAssigneeData;
         actionText = `assigned the case to ${finalAssignees.map(a => a.name || a.email).join(', ')}`;
-        await updateDoc(reportRef, { assignees: finalAssignees, status: 'Case Officer Assigned' });
+        await updateDoc(reportRef, { assignees: finalAssignees, status: 'In Progress' });
       } else if (mode === 'transfer') {
         finalAssignees = newAssigneeData;
         actionText = `transferred the case to ${finalAssignees.map(a => a.name || a.email).join(', ')}`;
