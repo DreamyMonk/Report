@@ -7,8 +7,26 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { Report } from './types';
 import { nanoid } from 'nanoid';
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { R2 } from './r2';
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+
+// R2 client logic moved here
+const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+
+if (!accountId || !accessKeyId || !secretAccessKey) {
+    console.error('Cloudflare R2 credentials are not configured in .env');
+}
+
+const R2 = new S3Client({
+  region: 'auto',
+  endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: accessKeyId!,
+    secretAccessKey: secretAccessKey!,
+  },
+});
+
 
 function generateReportId() {
   const prefix = 'IB';
@@ -93,7 +111,7 @@ export async function submitReport(prevState: any, formData: FormData) {
 
 export async function getSignedR2Url(reportId: string, fileName: string, fileType: string) {
     if (!process.env.R2_BUCKET_NAME || !process.env.R2_PUBLIC_URL) {
-        throw new Error("R2 environment variables are not set.");
+        return { success: false, error: "R2 environment variables are not set." };
     }
     
     const key = `reports/${reportId}/${Date.now()}-${fileName}`;
@@ -198,7 +216,7 @@ export async function inviteUser(prevState: any, formData: FormData) {
                 designation: designation || null,
                 department: department || null,
                 avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
-                createdAt: new Date(),
+                createdAt: new date(),
                 requiresPasswordChange: true,
             });
             

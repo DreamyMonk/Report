@@ -190,19 +190,21 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   
   const handleSendMessage = async () => {
     if (!message.trim() || !firestore || !report?.docId || !user || !userData) return;
-    
-    const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
-    const messagePayload: Omit<Message, 'docId' | 'sentAt'> = {
-        content: message,
-        sender: 'officer',
-        senderInfo: {
-            id: user.uid,
-            name: userData.name || userData.email || 'Case Officer',
-            avatarUrl: userData.avatarUrl || '',
-        },
-    };
 
+    setIsUploading(true); // Using this to disable send button
+    
     try {
+        const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
+        const messagePayload: Omit<Message, 'docId' | 'sentAt'> = {
+            content: message,
+            sender: 'officer',
+            senderInfo: {
+                id: user.uid,
+                name: userData.name || userData.email || 'Case Officer',
+                avatarUrl: userData.avatarUrl || '',
+            },
+        };
+
         await addDoc(messagesCollection, {
             ...messagePayload,
             sentAt: serverTimestamp(),
@@ -221,6 +223,8 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
           title: "Send Failed",
           description: "Could not send message. Please try again.",
       });
+    } finally {
+        setIsUploading(false);
     }
   };
 
@@ -356,7 +360,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                     <div className="pt-4 space-y-3 border-t">
                         <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message to the reporter..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved} />
                          <div className="flex justify-end items-center">
-                            <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isResolved}>
+                            <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isResolved || isUploading}>
                                 <Send className="mr-2 h-4 w-4"/>
                                 Send Message
                             </Button>
@@ -528,5 +532,6 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     </div>
   );
 }
+
 
     

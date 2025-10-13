@@ -189,13 +189,14 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
   const handleSendMessage = async () => {
     if (!message.trim() || !firestore || !report?.docId) return;
     
-    const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
-    const messagePayload: Omit<Message, 'docId' | 'sentAt'> = {
-        content: message,
-        sender: 'reporter',
-    };
-    
+    setIsUploading(true); // Disable button
     try {
+      const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
+      const messagePayload: Omit<Message, 'docId' | 'sentAt'> = {
+          content: message,
+          sender: 'reporter',
+      };
+      
       await addDoc(messagesCollection, {
           ...messagePayload,
           sentAt: serverTimestamp(),
@@ -214,6 +215,8 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
           title: "Send Failed",
           description: "Could not send message. Please try again.",
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -335,9 +338,9 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                                 </div>
 
                                 <div className="pt-4 space-y-3 border-t">
-                                    <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved}/>
+                                    <Textarea placeholder={isResolved ? "Chat is closed." : "Type your message..."} value={message} onChange={(e) => setMessage(e.target.value)} disabled={isResolved} />
                                      <div className="flex justify-end items-center">
-                                        <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isResolved}>
+                                        <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() || isResolved || isUploading}>
                                             <Send className="mr-2 h-4 w-4"/>
                                             Send Message
                                         </Button>
@@ -441,5 +444,6 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     </div>
   );
 }
+
 
     
