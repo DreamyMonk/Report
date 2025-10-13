@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, Landmark, Building, Briefcase, UserCheck, Paperclip, Link as LinkIcon, Loader2, UploadCloud } from "lucide-react";
+import { Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, Landmark, Building, Briefcase, UserCheck, Paperclip, Link as LinkIcon, Loader2, UploadCloud, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,33 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { cn } from "@/lib/utils";
 import { getSignedR2Url } from "@/lib/actions";
+
+const ReadMore = ({ text, maxLength = 100 }: { text: string, maxLength?: number }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    if (!text) {
+        return null;
+    }
+
+    const isLongText = text.length > maxLength;
+
+    const toggle = () => setIsExpanded(!isExpanded);
+
+    return (
+        <div>
+            <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                {isExpanded || !isLongText ? text : `${text.substring(0, maxLength)}...`}
+            </p>
+            {isLongText && (
+                <button onClick={toggle} className="text-xs text-primary hover:underline mt-1 flex items-center gap-1">
+                    {isExpanded ? "Read Less" : "Read More"}
+                    {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                </button>
+            )}
+        </div>
+    );
+};
+
 
 export default function TrackReportDetailPage({ params: { id } }: { params: { id: string } }) {
   const [message, setMessage] = useState('');
@@ -402,8 +429,7 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                                         </Avatar>
                                         <div className="text-sm">
                                             <p className="font-semibold">{assignee.name || assignee.email}</p>
-                                            {assignee.designation && <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Briefcase className="h-3 w-3" /> {assignee.designation}</p>}
-                                            {assignee.department && <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Building className="h-3 w-3" /> {assignee.department}</p>}
+                                            {assignee.about && <ReadMore text={assignee.about} />}
                                         </div>
                                     </div>
                                 ))
@@ -473,5 +499,3 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     </div>
   );
 }
-
-    

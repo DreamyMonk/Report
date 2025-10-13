@@ -112,6 +112,42 @@ export async function submitReport(prevState: any, formData: FormData) {
     }
 }
 
+async function uploadAvatar(userId: string, avatarFile: File) {
+    if (!process.env.R2_BUCKET_NAME || !process.env.R2_PUBLIC_URL) {
+        throw new Error("R2 environment variables are not set.");
+    }
+    
+    const key = `avatars/${userId}/${Date.now()}-${avatarFile.name}`;
+
+    const command = new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: key,
+        ContentType: avatarFile.type,
+    });
+    
+    try {
+        const signedUrl = await getSignedUrl(R2, command, { expiresIn: 3600 });
+
+        const buffer = Buffer.from(await avatarFile.arrayBuffer());
+
+        await fetch(signedUrl, {
+            method: 'PUT',
+            body: buffer,
+            headers: {
+              'Content-Type': avatarFile.type,
+            },
+        });
+        
+        const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+        
+        return publicUrl;
+    } catch (error) {
+        console.error("Error generating signed URL for avatar:", error);
+        throw new Error("Could not generate upload URL for avatar.");
+    }
+}
+
+
 export async function getSignedR2Url(reportId: string, fileName: string, fileType: string) {
     if (!process.env.R2_BUCKET_NAME || !process.env.R2_PUBLIC_URL) {
         return { success: false, error: "R2 environment variables are not set." };
@@ -189,8 +225,8 @@ export async function updateUser(prevState: any, formData: FormData) {
         const email = formData.get('email') as string;
         const name = formData.get('name') as string;
         const role = formData.get('role') as string;
-        const designation = formData.get('designation') as string | undefined;
-        const department = formData.get('department') as string | undefined;
+        const about = formData.get('about') as string | undefined;
+        const avatarFile = formData.get('avatar') as File | null;
 
         if (!docId) {
             return { message: 'User ID is missing.', success: false };
@@ -198,20 +234,32 @@ export async function updateUser(prevState: any, formData: FormData) {
         
         const userRec = await auth.getUserByEmail(email);
 
-        await auth.updateUser(userRec.uid, {
-            displayName: name,
-        });
-        await auth.setCustomUserClaims(userRec.uid, { role });
-        await db.collection('users').doc(docId).update({
+        let avatarUrl;
+        if (avatarFile && avatarFile.size > 0) {
+            avatarUrl = await uploadAvatar(userRec.uid, avatarFile);
+        }
+
+        const updates: any = {
             name,
             role,
-            designation: designation || null,
-            department: department || null,
+            about: about || null,
+        };
+
+        if (avatarUrl) {
+            updates.avatarUrl = avatarUrl;
+        }
+
+        await auth.updateUser(userRec.uid, {
+            displayName: name,
+            ...(avatarUrl && { photoURL: avatarUrl }),
         });
+        await auth.setCustomUserClaims(userRec.uid, { role });
+        await db.collection('users').doc(docId).update(updates);
         revalidatePath('/dashboard/users');
         return { message: `User ${email} has been updated.`, success: true };
 
     } catch (error: any) {
+        console.error(error);
         return { message: error.message || 'Failed to update user.', success: false };
     }
 }
@@ -223,10 +271,10 @@ export async function inviteUser(prevState: any, formData: FormData) {
         const email = formData.get('email') as string;
         const name = formData.get('name') as string;
         const role = formData.get('role') as string;
-        const designation = formData.get('designation') as string | undefined;
-        const department = formData.get('department') as string | undefined;
+        const about = formData.get('about') as string | undefined;
         const password = formData.get('password') as string;
-        
+        const avatarFile = formData.get('avatar') as File | null;
+
         if (!password || password.length < 6) {
             return { message: 'The password must be a string with at least 6 characters.', success: false };
         }
@@ -237,6 +285,12 @@ export async function inviteUser(prevState: any, formData: FormData) {
             displayName: name,
         });
 
+        let avatarUrl = `https://picsum.photos/seed/${userRecord.uid}/100/100`;
+        if (avatarFile && avatarFile.size > 0) {
+            avatarUrl = await uploadAvatar(userRecord.uid, avatarFile);
+        }
+        await auth.updateUser(userRecord.uid, { photoURL: avatarUrl });
+
         await auth.setCustomUserClaims(userRecord.uid, { role });
 
         await db.collection('users').doc(userRecord.uid).set({
@@ -244,9 +298,8 @@ export async function inviteUser(prevState: any, formData: FormData) {
             name: name,
             email: email,
             role: role,
-            designation: designation || null,
-            department: department || null,
-            avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
+            about: about || null,
+            avatarUrl: avatarUrl,
             createdAt: new Date(),
             requiresPasswordChange: true,
         });
@@ -255,6 +308,7 @@ export async function inviteUser(prevState: any, formData: FormData) {
         return { message: `User ${email} has been invited as a ${role}.`, success: true };
 
     } catch (error: any) {
+        console.error(error);
         return { message: error.message || 'Failed to process user.', success: false };
     }
 }

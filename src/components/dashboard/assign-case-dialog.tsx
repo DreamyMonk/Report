@@ -133,8 +133,7 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
           name: u.name,
           email: u.email,
           avatarUrl: u.avatarUrl,
-          designation: u.designation,
-          department: u.department,
+          about: u.about
         }));
       
       if (mode === 'assign') {

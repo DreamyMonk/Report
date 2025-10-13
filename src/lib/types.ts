@@ -8,8 +8,7 @@ export type User = {
   avatarUrl: string;
   email: string;
   role?: 'admin' | 'officer';
-  designation?: string;
-  department?: string;
+  about?: string;
   requiresPasswordChange?: boolean;
 };
 

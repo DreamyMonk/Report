@@ -12,13 +12,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useActionState, useEffect, useMemo } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { inviteUser, updateUser } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, UploadCloud } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { User } from "@/lib/types";
+import { Textarea } from "../ui/textarea";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 interface InviteUserDialogProps {
   open: boolean;
@@ -47,6 +50,9 @@ export function InviteUserDialog({ open, onOpenChange, userToEdit }: InviteUserD
   const [state, dispatch] = useActionState(action, initialState);
   const { toast } = useToast();
 
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(userToEdit?.avatarUrl || null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (state.message) {
       if (state.success) {
@@ -70,9 +76,25 @@ export function InviteUserDialog({ open, onOpenChange, userToEdit }: InviteUserD
     ? 'Update the details for this user.'
     : 'Create a new user account. The user will be required to change their password upon first login.';
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+        onOpenChange(isOpen);
+        if (!isOpen) {
+            setAvatarPreview(userToEdit?.avatarUrl || null);
+        }
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
@@ -85,6 +107,26 @@ export function InviteUserDialog({ open, onOpenChange, userToEdit }: InviteUserD
           {isEditMode && userToEdit?.docId && (
             <input type="hidden" name="userId" value={userToEdit.docId} />
           )}
+
+           <div className="space-y-2">
+                <Label>Avatar</Label>
+                <div className="flex items-center gap-4">
+                   <div className="relative h-16 w-16 rounded-full overflow-hidden bg-muted">
+                     {avatarPreview ? (
+                        <Image src={avatarPreview} alt="Avatar preview" layout="fill" objectFit="cover" />
+                     ) : (
+                        <div className="flex items-center justify-center h-full w-full text-muted-foreground">
+                            <UploadCloud />
+                        </div>
+                     )}
+                   </div>
+                    <Input id="avatar" name="avatar" type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                        {avatarPreview ? 'Change' : 'Upload'} Image
+                    </Button>
+                </div>
+            </div>
+
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
             <Input id="name" name="name" required defaultValue={userToEdit?.name || ''} />
@@ -99,8 +141,7 @@ export function InviteUserDialog({ open, onOpenChange, userToEdit }: InviteUserD
               <Input id="password" name="password" type="password" required />
             </div>
           )}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
               <Select name="role" required defaultValue={userToEdit?.role || 'officer'}>
                 <SelectTrigger>
@@ -112,14 +153,9 @@ export function InviteUserDialog({ open, onOpenChange, userToEdit }: InviteUserD
                 </SelectContent>
               </Select>
             </div>
-             <div className="space-y-2">
-              <Label htmlFor="designation">Designation</Label>
-              <Input id="designation" name="designation" placeholder="e.g. Lead Investigator" defaultValue={userToEdit?.designation || ''} />
-            </div>
-          </div>
            <div className="space-y-2">
-            <Label htmlFor="department">Department</Label>
-            <Input id="department" name="department" placeholder="e.g. Internal Affairs" defaultValue={userToEdit?.department || ''} />
+            <Label htmlFor="about">About</Label>
+            <Textarea id="about" name="about" placeholder="e.g. Specializes in financial investigations with 10 years of experience." defaultValue={userToEdit?.about || ''} />
           </div>
           <DialogFooter>
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>

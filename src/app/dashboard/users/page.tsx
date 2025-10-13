@@ -75,7 +75,7 @@ export default function UsersPage() {
             const isCurrentUser = currentUser?.uid === user.id;
             return (
               <Card key={user.docId} className="relative">
-                  <CardContent className="p-4 flex items-center gap-4">
+                  <CardContent className="p-4 flex items-start gap-4">
                       {isCurrentUser && <Badge variant="destructive" className="absolute -top-2 -right-2">Logged In</Badge>}
                        <Avatar className="h-12 w-12">
                           <AvatarImage src={user.avatarUrl} alt={user.name} />
@@ -84,10 +84,8 @@ export default function UsersPage() {
                       <div className="flex-1 space-y-1 min-w-0">
                           <p className="font-semibold truncate">{user.name}</p>
                           <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                          <div className="flex gap-2 items-center">
-                              <Badge variant="outline" className="capitalize">{user.role || 'User'}</Badge>
-                          </div>
-                          {user.designation && <p className="text-xs text-muted-foreground truncate">{user.designation}, {user.department}</p>}
+                          <Badge variant="outline" className="capitalize">{user.role || 'User'}</Badge>
+                          {user.about && <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{user.about}</p>}
                       </div>
                       <DropdownMenu>
                           <DropdownMenuTrigger asChild>
