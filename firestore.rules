@@ -1,50 +1,64 @@
-rules_version = '2';
 
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAppUser() {
-      return request.auth != null && ('role' in request.auth.token && (request.auth.token.role == 'admin' || request.auth.token.role == 'officer'));
+    // Helper function to check user roles
+    function isAuth() {
+      return request.auth != null;
     }
-
-    match /users/{userId} {
-      allow read, write: if isAppUser();
+    function isAdmin() {
+      return isAuth() && request.auth.token.role == 'admin';
     }
-    
-    match /reports/{reportId} {
-      allow list: if isAppUser();
-      allow read, write: if isAppUser();
-      
-      match /messages/{messageId} {
-        allow list, read, write: if isAppUser();
-      }
-      
-      match /attachments/{attachmentId} {
-         allow list, read, write: if isAppUser();
-      }
+    function isOfficer() {
+      return isAuth() && (request.auth.token.role == 'officer' || isAdmin());
     }
     
+    // Publicly accessible collections
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     match /statuses/{statusId} {
       allow read: if true;
-      allow write: if isAppUser();
+      allow write: if isAdmin();
+    }
+    match /content/{contentId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
     
-    match /categories/{categoryId} {
-       allow read: if true;
-       allow write: if isAppUser();
-    }
-    
+    // Shared reports
     match /shared_reports/{shareId} {
-      allow read, write: if true; // Publicly accessible for link sharing
+      allow read, create: if isOfficer();
     }
 
-    match /content/{contentId} {
-        allow read: if true;
-        allow write: if isAppUser();
+    // Report submission & tracking
+    match /reports/{reportId} {
+      allow create; // Anyone can create a report
+      allow list: if isOfficer();
+      allow read, update: if isOfficer();
+      
+      match /messages/{messageId} {
+        // Reporter can write, officers can read/write
+        allow create: if isOfficer() || request.auth == null; // Reporter is anonymous
+        allow list, read: if isOfficer();
+      }
+      match /attachments/{attachmentId} {
+        allow create, read: if isOfficer() || request.auth == null;
+      }
     }
     
+    // User profiles can be read by officers, but only edited by admins or the user themselves.
+    match /users/{userId} {
+      allow read: if isOfficer();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Audit logs are write-only for officers/system, read-only for admins.
     match /audit_logs/{logId} {
-      allow list, read, write: if isAppUser();
+      allow read: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOfficer();
     }
   }
 }
