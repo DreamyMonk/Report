@@ -37,6 +37,9 @@ function generateReportId() {
 
 
 export async function submitReport(prevState: any, formData: FormData) {
+    if (!prevState) {
+      return { message: null, success: false, reportId: null };
+    }
     const { db } = getFirebaseAdmin();
     const title = formData.get('title') as string;
     const content = formData.get('content') as string;
@@ -216,7 +219,7 @@ export async function inviteUser(prevState: any, formData: FormData) {
                 designation: designation || null,
                 department: department || null,
                 avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
-                createdAt: new date(),
+                createdAt: new Date(),
                 requiresPasswordChange: true,
             });
             
