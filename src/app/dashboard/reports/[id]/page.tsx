@@ -534,8 +534,8 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                   <Label htmlFor="officer-file-upload" className="text-sm font-medium mb-2 block">Add Attachment</Label>
                    <div className="flex items-center gap-2">
                       <Input id="officer-file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isUploading}/>
-                      <Label htmlFor="officer-file-upload" className={cn("flex-grow", !fileToUpload && "text-muted-foreground")}>
-                          <div className="border-2 border-dashed rounded-md px-3 py-2 text-sm cursor-pointer text-center hover:bg-accent">
+                      <Label htmlFor="officer-file-upload" className={cn("flex-grow min-w-0", !fileToUpload && "text-muted-foreground")}>
+                          <div className="border-2 border-dashed rounded-md px-3 py-2 text-sm cursor-pointer text-center hover:bg-accent truncate">
                           {fileToUpload ? fileToUpload.name : 'Click to select a file'}
                           </div>
                       </Label>

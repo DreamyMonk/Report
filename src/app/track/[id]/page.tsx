@@ -456,8 +456,8 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                               <Label htmlFor="reporter-file-upload" className="text-sm font-medium mb-2 block">Add Attachment</Label>
                                <div className="flex items-center gap-2">
                                   <Input id="reporter-file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isUploading || isResolved}/>
-                                  <Label htmlFor="reporter-file-upload" className={cn("flex-grow", !fileToUpload && "text-muted-foreground")}>
-                                      <div className="border-2 border-dashed rounded-md px-3 py-2 text-sm cursor-pointer text-center hover:bg-muted">
+                                  <Label htmlFor="reporter-file-upload" className={cn("flex-grow min-w-0", !fileToUpload && "text-muted-foreground")}>
+                                      <div className="border-2 border-dashed rounded-md px-3 py-2 text-sm cursor-pointer text-center hover:bg-muted truncate">
                                       {fileToUpload ? fileToUpload.name : 'Click to select a file'}
                                       </div>
                                   </Label>
