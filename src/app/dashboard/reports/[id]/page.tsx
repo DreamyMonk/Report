@@ -394,9 +394,9 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
               <CardTitle>Case Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center gap-2"><Fingerprint className="h-4 w-4"/>Tracking ID</span>
-                <span className="font-medium font-mono">{report.id}</span>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center gap-2"><Fingerprint className="h-4 w-4"/>Case ID</span>
+                <span className="font-medium font-mono">{report.caseId}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-2"><FileText className="h-4 w-4"/>Status</span>
@@ -440,7 +440,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                {isConfidential && report.reporter?.email && (
                 <div className="flex items-start justify-between gap-4">
                   <span className="text-muted-foreground flex items-center gap-2 shrink-0"><User className="h-4 w-4"/>Reporter Email</span>
-                  <span className="font-medium text-right break-words">{report.reporter.email}</span>
+                  <span className="font-medium text-right break-all">{report.reporter.email}</span>
                 </div>
               )}
                {isConfidential && report.reporter?.phone && (
@@ -561,5 +561,3 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     </div>
   );
 }
-
-    
