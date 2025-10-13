@@ -6,20 +6,32 @@ import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppContent } from '@/lib/types';
-import { useDoc, useFirestore } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import { useEffect, useMemo } from 'react';
+import { useFirestore } from '@/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
 import { initializeData } from '@/lib/actions';
 
 export default function Home() {
     const firestore = useFirestore();
+    const [content, setContent] = useState<AppContent | null>(null);
+    
     const contentRef = useMemo(() => {
         if (!firestore) return null;
         return doc(firestore, 'content', 'siteCopy');
     }, [firestore]);
-    const { data: content } = useDoc<AppContent>(contentRef);
+
+    useEffect(() => {
+      if (!contentRef) return;
+      const unsubscribe = onSnapshot(contentRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setContent(docSnap.data() as AppContent);
+        }
+      });
+      return () => unsubscribe();
+    }, [contentRef]);
+
 
   return (
     <div className="flex min-h-screen flex-col">

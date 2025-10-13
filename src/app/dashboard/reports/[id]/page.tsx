@@ -7,11 +7,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace } from "lucide-react";
 import { format } from "date-fns";
-import { useCollection, useDoc, useFirestore } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { Report, Message, User as AppUser, CaseStatus } from "@/lib/types";
-import { collection, doc, query, orderBy, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { collection, doc, query, orderBy, addDoc, serverTimestamp, updateDoc, onSnapshot, getDoc } from "firebase/firestore";
 import { AssignCaseDialog } from "@/components/dashboard/assign-case-dialog";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useAuth } from "@/firebase/auth-provider";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -33,27 +33,49 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   const { userData, user } = useAuth();
   const { toast } = useToast();
 
-  const reportRef = useMemo(() => {
-    if (!firestore) return null;
-    return doc(firestore, 'reports', id);
+  const [report, setReport] = useState<Report | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [statuses, setStatuses] = useState<CaseStatus[]>([]);
+
+  useEffect(() => {
+    if (!firestore) return;
+    setLoading(true);
+
+    const reportRef = doc(firestore, 'reports', id);
+    const unsubscribeReport = onSnapshot(reportRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setReport({ docId: docSnap.id, ...docSnap.data() } as Report);
+      } else {
+        setReport(null);
+      }
+      setLoading(false);
+    }, (error) => {
+        console.error("Error fetching report:", error);
+        setLoading(false);
+    });
+
+    const messagesQuery = query(collection(firestore, 'reports', id, 'messages'), orderBy('sentAt', 'asc'));
+    const unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
+        const msgs = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Message));
+        setMessages(msgs);
+    });
+
+    const statusesQuery = query(collection(firestore, 'statuses'), orderBy('label'));
+    const unsubscribeStatuses = onSnapshot(statusesQuery, (querySnapshot) => {
+        const statusList = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as CaseStatus));
+        setStatuses(statusList);
+    });
+
+
+    return () => {
+        unsubscribeReport();
+        unsubscribeMessages();
+        unsubscribeStatuses();
+    };
+
   }, [firestore, id]);
-  
-  const { data: report, loading } = useDoc<Report>(reportRef);
 
-  const messagesQuery = useMemo(() => {
-    if (!firestore || !report?.docId) return null;
-    return query(collection(firestore, 'reports', report.docId, 'messages'), orderBy('sentAt', 'asc'));
-  }, [firestore, report?.docId]);
-
-  const { data: messages } = useCollection<Message>(messagesQuery);
-
-
-  const statusesQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'statuses'), orderBy('label'));
-  }, [firestore]);
-
-  const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
   
  const handleSendMessage = () => {
     if (!message.trim() || !firestore || !report?.docId || !user || !userData) return;
@@ -348,3 +370,6 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   );
 }
 
+
+
+    

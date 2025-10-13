@@ -21,10 +21,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useCollection, useFirestore } from "@/firebase";
-import { Category, Report } from "@/lib/types";
-import { collection, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
-import { nanoid } from 'nanoid';
+import { useFirestore } from "@/firebase";
+import { Category } from "@/lib/types";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { submitReport } from "@/lib/actions";
 
 const initialState = {
@@ -49,7 +48,8 @@ export function ReportSubmissionForm() {
   const [generatedId, setGeneratedId] = useState<string | null>(null);
   const firestore = useFirestore();
   const [submissionType, setSubmissionType] = useState('anonymous');
-  
+  const [categories, setCategories] = useState<Category[]>([]);
+
   useEffect(() => {
     if (state.message) {
       if (state.success) {
@@ -59,7 +59,6 @@ export function ReportSubmissionForm() {
         });
         setGeneratedId(state.reportId);
         setShowSuccessDialog(true);
-        // Reset form state if needed, though useActionState helps manage this
         const form = document.getElementById('report-submission-form') as HTMLFormElement;
         form?.reset();
         setSubmissionType('anonymous');
@@ -74,11 +73,16 @@ export function ReportSubmissionForm() {
     }
   }, [state, toast]);
 
-  const categoriesQuery = useMemo(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'categories');
+  useEffect(() => {
+    if (!firestore) return;
+    const categoriesQuery = query(collection(firestore, 'categories'), orderBy('label'));
+    const unsubscribe = onSnapshot(categoriesQuery, (snapshot) => {
+        const cats = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Category));
+        setCategories(cats);
+    });
+    return () => unsubscribe();
   }, [firestore]);
-  const { data: categories } = useCollection<Category>(categoriesQuery);
+
 
   const copyToClipboard = () => {
     if (generatedId) {
@@ -238,5 +242,3 @@ export function ReportSubmissionForm() {
     </>
   );
 }
-
-    

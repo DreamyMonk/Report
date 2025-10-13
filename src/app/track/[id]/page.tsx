@@ -10,10 +10,10 @@ import { FileUp, Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, 
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useCollection, useFirestore } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { Report, Message, CaseStatus } from "@/lib/types";
-import { collection, doc, query, where, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
-import { useState, useMemo } from "react";
+import { collection, doc, query, where, orderBy, addDoc, serverTimestamp, getDocs, onSnapshot } from "firebase/firestore";
+import { useState, useMemo, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -24,27 +24,56 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const reportsQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'reports'), where('id', '==', id.toUpperCase()));
+  const [report, setReport] = useState<Report | null>(null);
+  const [statuses, setStatuses] = useState<CaseStatus[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!firestore) return;
+
+    const findReport = async () => {
+      setLoading(true);
+      const reportsQuery = query(collection(firestore, 'reports'), where('id', '==', id.toUpperCase()));
+      const reportSnapshot = await getDocs(reportsQuery);
+
+      if (!reportSnapshot.empty) {
+        const reportDoc = reportSnapshot.docs[0];
+        const reportData = { docId: reportDoc.id, ...reportDoc.data() } as Report;
+        setReport(reportData);
+
+        // Set up listeners after finding the report
+        const messagesQuery = query(collection(firestore, 'reports', reportDoc.id, 'messages'), orderBy('sentAt', 'asc'));
+        const unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
+          const msgs = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Message));
+          setMessages(msgs);
+        });
+
+        return unsubscribeMessages; // Return unsubscribe function
+      } else {
+        setReport(null);
+      }
+      setLoading(false);
+    };
+
+    const statusesQuery = query(collection(firestore, 'statuses'));
+    const unsubscribeStatuses = onSnapshot(statusesQuery, (snapshot) => {
+      const statusList = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as CaseStatus));
+      setStatuses(statusList);
+    });
+
+    let unsubscribeMessages: (() => void) | undefined;
+    findReport().then(unsub => {
+      unsubscribeMessages = unsub;
+    });
+
+    return () => {
+      unsubscribeStatuses();
+      if (unsubscribeMessages) {
+        unsubscribeMessages();
+      }
+    };
   }, [firestore, id]);
-  
-  const statusesQuery = useMemo(() => {
-    if(!firestore) return null;
-    return query(collection(firestore, 'statuses'));
-  }, [firestore]);
-
-  const { data: reports, loading: reportsLoading } = useCollection<Report>(reportsQuery);
-  const { data: statuses } = useCollection<CaseStatus>(statusesQuery);
-  
-  const report = useMemo(() => reports?.[0], [reports]);
-
-  const messagesQuery = useMemo(() => {
-    if (!firestore || !report?.docId) return null;
-    return query(collection(firestore, 'reports', report.docId, 'messages'), orderBy('sentAt', 'asc'));
-  }, [firestore, report?.docId]);
-
-  const { data: messages } = useCollection<Message>(messagesQuery);
 
 
  const handleSendMessage = () => {
@@ -71,7 +100,7 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     });
 };
 
-  if (reportsLoading) {
+  if (loading) {
     return <div className="text-center p-12">Loading report...</div>
   }
 
@@ -89,16 +118,14 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
   };
 
   const isCaseAssigned = report.assignees && report.assignees.length > 0;
-  const isCaseClosed = report.status === 'Resolved' || report.status === 'Dismissed';
   
-  const timelineStatus = isCaseAssigned ? "Case Officer Assigned" : "Report Submitted";
   const customStatus = (report.status !== 'New' && report.status !== 'In Progress' && report.status !== 'Case Officer Assigned') ? report.status : null;
 
 
   const currentStatusInfo = statusInfo[report.status] || { icon: Hourglass, text: "The status has been updated."};
   const CurrentStatusIcon = currentStatusInfo.icon;
   const currentStatusColor = statuses?.find(s => s.label === report.status)?.color || '#64748b';
-  const isResolved = report.status === 'Resolved';
+  const isResolved = report.status === 'Resolved' || report.status === 'Dismissed';
 
   return (
     <div className="min-h-screen bg-secondary/50">
@@ -260,3 +287,5 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     </div>
   );
 }
+
+    
