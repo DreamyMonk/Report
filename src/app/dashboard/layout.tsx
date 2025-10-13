@@ -19,6 +19,7 @@ import {
   Users,
   History,
   ChevronLeft,
+  Archive,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -32,6 +33,7 @@ const navItems = [
     { href: "/dashboard/reports", icon: FileText, label: "All Reports" },
     { href: "/dashboard/users", icon: Users, label: "Users" },
     { href: "/dashboard/audit-log", icon: History, label: "Audit Log" },
+    { href: "/dashboard/archive", icon: Archive, label: "Archive" },
     { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
@@ -54,6 +56,13 @@ export default function DashboardLayout({
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
+
+  const visibleNavItems = navItems.filter(item => {
+    if (item.href === '/dashboard/archive' && userData?.role !== 'admin') {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <TooltipProvider>
@@ -78,7 +87,7 @@ export default function DashboardLayout({
             </Link>
           </div>
           <nav className="flex-1 space-y-2 p-2 lg:p-4">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <Tooltip key={item.label} delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Link
