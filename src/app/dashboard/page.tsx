@@ -26,19 +26,23 @@ export default function DashboardPage() {
   const highPriorityReportsQuery = useMemo(() => {
     if (!firestore || !user) return null;
     
+    // Simplified query to avoid composite index requirement
     const baseQuery = query(
       collection(firestore, 'reports'),
       where('severity', 'in', ['High', 'Critical']),
-      where('status', '==', 'New')
+      orderBy('submittedAt', 'desc'),
+      limit(10)
     );
 
     if (userData?.role === 'admin') {
-      return query(baseQuery, orderBy('submittedAt', 'desc'), limit(5));
+      return baseQuery;
     }
     
+    // For non-admins, add the assignee filter. This might still require an index, but it's more likely to be one Firestore can auto-create.
     return query(
-      baseQuery,
+      collection(firestore, 'reports'),
       where('assignees', 'array-contains', user.uid),
+      where('severity', 'in', ['High', 'Critical']),
       orderBy('submittedAt', 'desc'),
       limit(5)
     );
@@ -52,7 +56,13 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!highPriorityReportsQuery) return;
     const unsubscribe = onSnapshot(highPriorityReportsQuery, (snapshot) => {
-        const reportData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Report));
+        let reportData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Report));
+        // Manual filter for status after fetching, since it was removed from the query
+        if(userData?.role === 'admin') {
+          reportData = reportData.filter(report => report.status === 'New').slice(0, 5);
+        } else {
+           reportData = reportData.filter(report => report.status === 'New');
+        }
         setReports(reportData);
     }, (error) => {
         console.error("Error fetching high priority reports:", error);
@@ -63,7 +73,7 @@ export default function DashboardPage() {
         errorEmitter.emit('permission-error', permissionError);
     });
     return () => unsubscribe();
-  }, [highPriorityReportsQuery]);
+  }, [highPriorityReportsQuery, userData]);
 
   useEffect(() => {
     if (!auditLogsQuery) return;
