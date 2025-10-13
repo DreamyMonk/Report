@@ -19,8 +19,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { cn } from "@/lib/utils";
 
-export default function TrackReportDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function TrackReportDetailPage({ params: { id } }: { params: { id: string } }) {
   const [message, setMessage] = useState('');
   const { toast } = useToast();
   const firestore = useFirestore();

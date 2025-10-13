@@ -23,8 +23,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 
 
-export default function ReportDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function ReportDetailPage({ params: { id } }: { params: { id: string } }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [assignMode, setAssignMode] = useState<'assign' | 'transfer' | 'add'>('assign');
   const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);

@@ -12,8 +12,7 @@ import { collection, doc, query, where } from "firebase/firestore";
 import { useMemo } from "react";
 import { Logo } from "@/components/icons/logo";
 
-export default function SharedReportPage({ params }: { params: { shareId: string } }) {
-  const { shareId } = params;
+export default function SharedReportPage({ params: { shareId } }: { params: { shareId: string } }) {
   const firestore = useFirestore();
   const router = useRouter();
 
