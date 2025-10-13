@@ -304,7 +304,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex justify-between items-start">
-        <div>
+        <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
             <Badge variant={report.severity === 'High' ? 'destructive' : report.severity === 'Medium' ? 'secondary' : 'default'} className="capitalize">{report.severity} Severity</Badge>
             <Badge variant="outline" className="capitalize flex items-center gap-1">
@@ -312,9 +312,9 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                 {report.submissionType}
             </Badge>
             </div>
-            <h1 className="font-headline text-4xl font-bold">{report.title}</h1>
+            <h1 className="font-headline text-4xl font-bold break-words">{report.title}</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-4 shrink-0">
             <Button variant="destructive" onClick={() => setIsCloseCaseDialogOpen(true)} disabled={isResolved}>
                 <FileX2 className="mr-2 h-4 w-4" /> Close Case
             </Button>
@@ -475,8 +475,8 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                                 <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
                                 <AvatarFallback>{assignee.name ? assignee.name.split(' ').map(n => n[0]).join('') : (assignee.email ? assignee.email.charAt(0).toUpperCase() : 'U')}</AvatarFallback>
                             </Avatar>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium leading-none">{assignee.name || assignee.email}</p>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium leading-none break-words">{assignee.name || assignee.email}</p>
                                 {assignee.name && assignee.email && <p className="text-sm text-muted-foreground break-all">{assignee.email}</p>}
                             </div>
                         </div>
