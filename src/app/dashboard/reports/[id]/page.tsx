@@ -246,6 +246,11 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     const selectedStatus = statuses.find(s => s.docId === statusId);
     if (!selectedStatus) return;
 
+    if (selectedStatus.label === 'Resolved') {
+      setIsCloseCaseDialogOpen(true);
+      return;
+    }
+
     try {
       const reportRef = doc(firestore, 'reports', report.docId);
       await updateDoc(reportRef, {
@@ -310,7 +315,6 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
             </Badge>
             </div>
             <h1 className="font-headline text-4xl font-bold break-words">{report.title}</h1>
-            <p className="text-muted-foreground font-mono mt-1">Case ID: {report.caseId}</p>
         </div>
         <div className="flex items-center gap-2 ml-4 shrink-0">
             <Button variant="destructive" onClick={() => setIsCloseCaseDialogOpen(true)} disabled={isResolved}>

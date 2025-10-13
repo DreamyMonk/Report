@@ -278,7 +278,7 @@ export async function inviteUser(prevState: any, formData: FormData) {
         const password = formData.get('password') as string;
         const avatarFile = formData.get('avatar') as File | null;
 
-        if (!isEditMode && (!password || password.length < 6)) {
+        if (!password || password.length < 6) {
             return { message: 'The password must be a string with at least 6 characters.', success: false };
         }
 
@@ -368,13 +368,11 @@ export async function initializeData(db: Firestore) {
   const statusesSnapshot = await statusesCollection.get();
   if (statusesSnapshot.empty) {
     const defaultStatuses = [
-      { label: 'Report Submitted', color: '#64748b', isDefault: true },
-      { label: 'Case Officer Assigned', color: '#f97316', isDefault: true },
-      { label: 'Case Closed', color: '#22c55e', isDefault: true },
-      { label: 'New', color: '#3b82f6', isDefault: false }, // Internal status
-      { label: 'In Progress', color: '#f97316', isDefault: false }, // Internal status
-      { label: 'Resolved', color: '#22c55e', isDefault: false }, // Maps to Case Closed
-      { label: 'Dismissed', color: '#ef4444', isDefault: false }
+      { label: 'New', color: '#3b82f6', isDefault: true },
+      { label: 'In Progress', color: '#f97316', isDefault: true },
+      { label: 'Resolved', color: '#22c55e', isDefault: true },
+      { label: 'Dismissed', color: '#ef4444', isDefault: false },
+      { label: 'Forwarded to Upper Management', color: '#8b5cf6', isDefault: false }
     ];
     for (const status of defaultStatuses) {
       await statusesCollection.add(status);
