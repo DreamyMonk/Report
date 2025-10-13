@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useActionState, useEffect, useMemo } from "react";
 import { useFormStatus } from "react-dom";
-import { inviteUser } from "@/lib/actions";
+import { inviteUser, updateUser } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -41,10 +41,11 @@ function SubmitButton({ isEditMode }: { isEditMode: boolean }) {
 }
 
 export function InviteUserDialog({ open, onOpenChange, userToEdit }: InviteUserDialogProps) {
-  const [state, dispatch] = useActionState(inviteUser, initialState);
-  const { toast } = useToast();
-  
   const isEditMode = useMemo(() => !!userToEdit, [userToEdit]);
+  
+  const formAction = isEditMode ? updateUser : inviteUser;
+  const [state, dispatch] = useActionState(formAction, initialState);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (state.message) {

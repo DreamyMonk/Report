@@ -170,63 +170,75 @@ export async function createAdminUser(prevState: any, formData: FormData) {
   }
 }
 
-export async function inviteUser(prevState: any, formData: FormData) {
+export async function updateUser(prevState: any, formData: FormData) {
     try {
         const { auth, db } = getFirebaseAdmin();
-        const userId = formData.get('userId') as string | null;
+        const userId = formData.get('userId') as string;
         const email = formData.get('email') as string;
         const name = formData.get('name') as string;
         const role = formData.get('role') as string;
         const designation = formData.get('designation') as string | undefined;
         const department = formData.get('department') as string | undefined;
 
-        if (userId) {
-            // Edit existing user
-            await auth.updateUser(userId, {
-                displayName: name,
-            });
-            await auth.setCustomUserClaims(userId, { role });
-            await db.collection('users').doc(userId).update({
-                name,
-                role,
-                designation: designation || null,
-                department: department || null,
-            });
-            revalidatePath('/dashboard/users');
-            return { message: `User ${email} has been updated.`, success: true };
-
-        } else {
-            // Create new user
-            const password = formData.get('password') as string;
-            
-            if (!password || password.length < 6) {
-                return { message: 'The password must be a string with at least 6 characters.', success: false };
-            }
-
-            const userRecord = await auth.createUser({
-                email,
-                password,
-                displayName: name,
-            });
-
-            await auth.setCustomUserClaims(userRecord.uid, { role });
-
-            await db.collection('users').doc(userRecord.uid).set({
-                id: userRecord.uid,
-                name: name,
-                email: email,
-                role: role,
-                designation: designation || null,
-                department: department || null,
-                avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
-                createdAt: new Date(),
-                requiresPasswordChange: true,
-            });
-            
-            revalidatePath('/dashboard/users');
-            return { message: `User ${email} has been invited as a ${role}.`, success: true };
+        if (!userId) {
+            return { message: 'User ID is missing.', success: false };
         }
 
+        await auth.updateUser(userId, {
+            displayName: name,
+        });
+        await auth.setCustomUserClaims(userId, { role });
+        await db.collection('users').doc(userId).update({
+            name,
+            role,
+            designation: designation || null,
+            department: department || null,
+        });
+        revalidatePath('/dashboard/users');
+        return { message: `User ${email} has been updated.`, success: true };
+
+    } catch (error: any) {
+        return { message: error.message || 'Failed to update user.', success: false };
+    }
+}
+
+
+export async function inviteUser(prevState: any, formData: FormData) {
+    try {
+        const { auth, db } = getFirebaseAdmin();
+        const email = formData.get('email') as string;
+        const name = formData.get('name') as string;
+        const role = formData.get('role') as string;
+        const designation = formData.get('designation') as string | undefined;
+        const department = formData.get('department') as string | undefined;
+        const password = formData.get('password') as string;
+
+        if (!password || password.length < 6) {
+            return { message: 'The password must be a string with at least 6 characters.', success: false };
+        }
+
+        const userRecord = await auth.createUser({
+            email,
+            password,
+            displayName: name,
+        });
+
+        await auth.setCustomUserClaims(userRecord.uid, { role });
+
+        await db.collection('users').doc(userRecord.uid).set({
+            id: userRecord.uid,
+            name: name,
+            email: email,
+            role: role,
+            designation: designation || null,
+            department: department || null,
+            avatarUrl: `https://picsum.photos/seed/${userRecord.uid}/100/100`,
+            createdAt: new Date(),
+            requiresPasswordChange: true,
+        });
+        
+        revalidatePath('/dashboard/users');
+        return { message: `User ${email} has been invited as a ${role}.`, success: true };
 
     } catch (error: any) {
         return { message: error.message || 'Failed to process user.', success: false };
@@ -331,5 +343,3 @@ export async function initializeData(db: Firestore) {
      console.log('Seeded default content.');
   }
 }
-
-    
