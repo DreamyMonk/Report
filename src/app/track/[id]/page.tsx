@@ -32,39 +32,43 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
   useEffect(() => {
     if (!firestore) return;
 
+    let unsubscribeMessages: (() => void) | undefined;
+    
     const findReport = async () => {
       setLoading(true);
       const reportsQuery = query(collection(firestore, 'reports'), where('id', '==', id.toUpperCase()));
-      const reportSnapshot = await getDocs(reportsQuery);
+      
+      try {
+        const reportSnapshot = await getDocs(reportsQuery);
 
-      if (!reportSnapshot.empty) {
-        const reportDoc = reportSnapshot.docs[0];
-        const reportData = { docId: reportDoc.id, ...reportDoc.data() } as Report;
-        setReport(reportData);
+        if (!reportSnapshot.empty) {
+          const reportDoc = reportSnapshot.docs[0];
+          const reportData = { docId: reportDoc.id, ...reportDoc.data() } as Report;
+          setReport(reportData);
 
-        // Set up listeners after finding the report
-        const messagesQuery = query(collection(firestore, 'reports', reportDoc.id, 'messages'), orderBy('sentAt', 'asc'));
-        const unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
-          const msgs = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Message));
-          setMessages(msgs);
-        });
-
-        return unsubscribeMessages; // Return unsubscribe function
-      } else {
+          // Set up listeners after finding the report
+          const messagesQuery = query(collection(firestore, 'reports', reportDoc.id, 'messages'), orderBy('sentAt', 'asc'));
+          unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
+            const msgs = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Message));
+            setMessages(msgs);
+          });
+        } else {
+          setReport(null);
+        }
+      } catch (error) {
+        console.error("Error fetching report:", error);
         setReport(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
+
+    findReport();
 
     const statusesQuery = query(collection(firestore, 'statuses'));
     const unsubscribeStatuses = onSnapshot(statusesQuery, (snapshot) => {
       const statusList = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as CaseStatus));
       setStatuses(statusList);
-    });
-
-    let unsubscribeMessages: (() => void) | undefined;
-    findReport().then(unsub => {
-      unsubscribeMessages = unsub;
     });
 
     return () => {
