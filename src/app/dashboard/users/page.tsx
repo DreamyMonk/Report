@@ -1,12 +1,12 @@
 
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCollection, useFirestore } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { User } from "@/lib/types";
-import { collection, query } from "firebase/firestore";
+import { collection, query, onSnapshot } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, PlusCircle, Trash2 } from "lucide-react";
 import { InviteUserDialog } from "@/components/dashboard/invite-user-dialog";
@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DotsVerticalIcon } from "@radix-ui/react-icons";
 import { RemoveUserDialog } from "@/components/dashboard/remove-user-dialog";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export default function UsersPage() {
   const firestore = useFirestore();
@@ -26,12 +28,25 @@ export default function UsersPage() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [userToRemove, setUserToRemove] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
 
   const usersQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'));
   }, [firestore]);
-  const { data: users } = useCollection<User>(usersQuery);
+
+  useEffect(() => {
+    if (!usersQuery) return;
+    const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
+        const usersData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as User));
+        setUsers(usersData);
+    }, (error) => {
+        console.error("Error fetching users:", error);
+        const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
+        errorEmitter.emit('permission-error', permissionError);
+    });
+    return () => unsubscribe();
+  }, [usersQuery]);
 
   const handleEdit = (user: User) => {
     setUserToEdit(user);

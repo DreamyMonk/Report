@@ -46,6 +46,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   const [messages, setMessages] = useState<Message[]>([]);
   const [statuses, setStatuses] = useState<CaseStatus[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [allUsers, setAllUsers] = useState<AppUser[]>([]);
 
   useEffect(() => {
     if (!firestore) return;
@@ -111,12 +112,23 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
         errorEmitter.emit('permission-error', permissionError);
     });
 
+    const usersCollection = collection(firestore, 'users');
+    const unsubscribeUsers = onSnapshot(usersCollection, (querySnapshot) => {
+        const usersList = querySnapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as AppUser));
+        setAllUsers(usersList);
+    }, (error) => {
+        console.error("Error fetching users:", error);
+        const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
+        errorEmitter.emit('permission-error', permissionError);
+    });
+
 
     return () => {
         unsubscribeReport();
         unsubscribeMessages();
         unsubscribeStatuses();
         unsubscribeAttachments();
+        unsubscribeUsers();
     };
 
   }, [firestore, id]);
@@ -486,19 +498,34 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                 {attachments.map((att) => (
-                    <a 
-                      key={att.docId}
-                      href={att.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-2 rounded-md bg-secondary hover:bg-secondary/80 transition-colors text-sm"
-                    >
-                      <LinkIcon className="h-4 w-4" />
-                      <span className="flex-1 truncate font-medium">{att.fileName}</span>
-                      <span className="text-xs text-muted-foreground">{att.uploadedAt ? format(att.uploadedAt.toDate(), "PP") : ''}</span>
-                    </a>
-                  ))}
+                 {attachments.map((att) => {
+                    const uploaderIsReporter = att.uploadedBy.id === 'reporter';
+                    const uploader = uploaderIsReporter ? null : allUsers.find(u => u.id === att.uploadedBy.id);
+
+                    return (
+                        <a 
+                        key={att.docId}
+                        href={att.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-2 rounded-md bg-secondary hover:bg-secondary/80 transition-colors text-sm"
+                        >
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={uploader?.avatarUrl} />
+                            <AvatarFallback>
+                                {uploaderIsReporter ? <User className="h-5 w-5"/> : uploader?.name?.charAt(0) || 'U'}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                            <p className="truncate font-medium">{att.fileName}</p>
+                            <p className="text-xs text-muted-foreground">
+                                Uploaded by {uploaderIsReporter ? 'Reporter' : att.uploadedBy.name}
+                            </p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{att.uploadedAt ? format(att.uploadedAt.toDate(), "PP") : ''}</span>
+                        </a>
+                    )
+                 })}
                   {attachments.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">No attachments found.</p>
                   )}
