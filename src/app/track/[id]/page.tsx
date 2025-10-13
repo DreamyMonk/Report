@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useFirestore } from "@/firebase";
-import { Report, Message, CaseStatus, Attachment } from "@/lib/types";
+import { Report, Message, CaseStatus, Attachment, User as AppUser } from "@/lib/types";
 import { collection, doc, query, where, orderBy, addDoc, serverTimestamp, getDocs, onSnapshot } from "firebase/firestore";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +33,7 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
   const [statuses, setStatuses] = useState<CaseStatus[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -116,8 +117,19 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
         errorEmitter.emit('permission-error', permissionError);
     });
 
+    const usersCollection = collection(firestore, 'users');
+    const unsubscribeUsers = onSnapshot(usersCollection, (querySnapshot) => {
+        const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUser));
+        setAllUsers(usersList);
+    }, (error) => {
+        console.error("Error fetching users:", error);
+        const permissionError = new FirestorePermissionError({ path: 'users', operation: 'list' });
+        errorEmitter.emit('permission-error', permissionError);
+    });
+
     return () => {
       unsubscribeStatuses();
+      unsubscribeUsers();
       if (unsubscribeReport) unsubscribeReport();
       if (unsubscribeMessages) unsubscribeMessages();
       if (unsubscribeAttachments) unsubscribeAttachments();
@@ -408,7 +420,11 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                         </CardHeader>
                         <CardContent>
                            <div className="space-y-3">
-                             {attachments.map((att) => (
+                             {attachments.map((att) => {
+                                const uploaderIsReporter = att.uploadedBy.id === 'reporter';
+                                const uploader = uploaderIsReporter ? null : allUsers.find(u => u.id === att.uploadedBy.id);
+
+                                return (
                                 <a 
                                   key={att.docId}
                                   href={att.url}
@@ -416,11 +432,22 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                                   rel="noopener noreferrer"
                                   className="flex items-center gap-3 p-2 rounded-md bg-background hover:bg-muted transition-colors text-sm"
                                 >
-                                  <LinkIcon className="h-4 w-4" />
-                                  <span className="flex-1 truncate font-medium">{att.fileName}</span>
-                                  <span className="text-xs text-muted-foreground">{att.uploadedAt ? format(att.uploadedAt.toDate(), "PP") : ''}</span>
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage src={uploader?.avatarUrl} />
+                                        <AvatarFallback>
+                                            {uploaderIsReporter ? <User className="h-5 w-5"/> : uploader?.name?.charAt(0) || 'U'}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                  <div className="flex-1 overflow-hidden">
+                                    <p className="truncate font-medium">{att.fileName}</p>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                        Uploaded by {uploaderIsReporter ? 'Reporter' : att.uploadedBy.name}
+                                    </p>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground shrink-0">{att.uploadedAt ? format(att.uploadedAt.toDate(), "PP") : ''}</span>
                                 </a>
-                              ))}
+                                )
+                              })}
                               {attachments.length === 0 && (
                                 <p className="text-sm text-muted-foreground text-center py-4">No attachments uploaded.</p>
                               )}

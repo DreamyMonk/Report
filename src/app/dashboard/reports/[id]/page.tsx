@@ -516,13 +516,13 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                                 {uploaderIsReporter ? <User className="h-5 w-5"/> : uploader?.name?.charAt(0) || 'U'}
                             </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
+                        <div className="flex-1 overflow-hidden">
                             <p className="truncate font-medium">{att.fileName}</p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground truncate">
                                 Uploaded by {uploaderIsReporter ? 'Reporter' : att.uploadedBy.name}
                             </p>
                         </div>
-                        <span className="text-xs text-muted-foreground">{att.uploadedAt ? format(att.uploadedAt.toDate(), "PP") : ''}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">{att.uploadedAt ? format(att.uploadedAt.toDate(), "PP") : ''}</span>
                         </a>
                     )
                  })}
