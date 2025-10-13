@@ -104,13 +104,13 @@ export default function ArchivePage() {
   }, [userData, authLoading, router]);
 
   const reportsQuery = useMemo(() => {
-    if (!firestore) return null;
+    if (!firestore || userData?.role !== 'admin') return null;
     return query(
         collection(firestore, 'reports'), 
         where('status', '==', 'Resolved'),
         orderBy('submittedAt', 'desc')
     );
-  }, [firestore]);
+  }, [firestore, userData]);
   
   useEffect(() => {
     if (!reportsQuery) return;

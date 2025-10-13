@@ -24,24 +24,22 @@ export default function DashboardPage() {
   const [auditLogsLoading, setAuditLogsLoading] = useState(true);
   
   const highPriorityReportsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    
-    // Simplified query to avoid composite index requirement
-    const baseQuery = query(
-      collection(firestore, 'reports'),
-      where('severity', 'in', ['High', 'Critical']),
-      orderBy('submittedAt', 'desc'),
-      limit(10)
-    );
+    if (!firestore || !user || !userData) return null;
 
-    if (userData?.role === 'admin') {
-      return baseQuery;
+    if (userData.role === 'admin') {
+      return query(
+        collection(firestore, 'reports'),
+        where('status', '==', 'New'),
+        where('severity', 'in', ['High', 'Critical']),
+        orderBy('submittedAt', 'desc'),
+        limit(5)
+      );
     }
     
-    // For non-admins, add the assignee filter. This might still require an index, but it's more likely to be one Firestore can auto-create.
     return query(
       collection(firestore, 'reports'),
       where('assignees', 'array-contains', user.uid),
+      where('status', '==', 'New'),
       where('severity', 'in', ['High', 'Critical']),
       orderBy('submittedAt', 'desc'),
       limit(5)
@@ -57,12 +55,6 @@ export default function DashboardPage() {
     if (!highPriorityReportsQuery) return;
     const unsubscribe = onSnapshot(highPriorityReportsQuery, (snapshot) => {
         let reportData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Report));
-        // Manual filter for status after fetching, since it was removed from the query
-        if(userData?.role === 'admin') {
-          reportData = reportData.filter(report => report.status === 'New').slice(0, 5);
-        } else {
-           reportData = reportData.filter(report => report.status === 'New');
-        }
         setReports(reportData);
     }, (error) => {
         console.error("Error fetching high priority reports:", error);

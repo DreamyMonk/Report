@@ -18,11 +18,11 @@ export default function AllReportsPage() {
   const [statusFilter, setStatusFilter] = useState('All');
 
   const reportsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user || !userData) return null;
     
     const reportsCollection = collection(firestore, 'reports');
 
-    if (userData?.role === 'admin') {
+    if (userData.role === 'admin') {
       return query(reportsCollection, orderBy('submittedAt', 'desc'));
     }
 
