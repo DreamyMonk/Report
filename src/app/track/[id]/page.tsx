@@ -42,6 +42,7 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     let unsubscribeMessages: (() => void) | undefined;
     
     const findReport = async () => {
+      setLoading(true);
       const reportsQuery = query(collection(firestore, 'reports'), where('id', '==', id.toUpperCase()));
       
       try {
@@ -114,11 +115,15 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
       }
       
       const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
-      await addDoc(messagesCollection, {
+      const messagePayload: Omit<Message, 'docId' | 'sentAt'> = {
           content: message,
-          sentAt: serverTimestamp(),
           sender: 'reporter',
           ...(fileData && { attachment: fileData }),
+      };
+      
+      await addDoc(messagesCollection, {
+          ...messagePayload,
+          sentAt: serverTimestamp(),
       });
 
       setMessage('');
@@ -353,5 +358,3 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     </div>
   );
 }
-
-    

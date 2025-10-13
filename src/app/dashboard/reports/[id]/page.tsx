@@ -100,6 +100,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   
  const handleSendMessage = async () => {
     if ((!message.trim() && !attachment) || !firestore || !report?.docId || !user || !userData) return;
+    
     setIsUploading(true);
 
     try {
@@ -117,9 +118,8 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
 
       const messagesCollection = collection(firestore, 'reports', report.docId, 'messages');
       
-      await addDoc(messagesCollection, {
+      const messagePayload: Omit<Message, 'docId' | 'sentAt'> = {
           content: message,
-          sentAt: serverTimestamp(),
           sender: 'officer',
           senderInfo: {
               id: user.uid,
@@ -127,6 +127,11 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
               avatarUrl: userData.avatarUrl || '',
           },
           ...(fileData && { attachment: fileData }),
+      };
+
+      await addDoc(messagesCollection, {
+          ...messagePayload,
+          sentAt: serverTimestamp(),
       });
 
       setMessage('');
@@ -448,4 +453,3 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   );
 }
 
-    
