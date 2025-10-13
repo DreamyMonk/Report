@@ -58,7 +58,7 @@ export default function DashboardLayout({
   };
 
   const visibleNavItems = navItems.filter(item => {
-    if (item.href === '/dashboard/archive' && userData?.role !== 'admin') {
+    if ((item.href === '/dashboard/archive' || item.href === '/dashboard/audit-log') && userData?.role !== 'admin') {
       return false;
     }
     return true;

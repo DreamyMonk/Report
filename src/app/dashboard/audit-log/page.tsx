@@ -11,19 +11,34 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
+import { useAuth } from "@/firebase/auth-provider";
+import { useRouter } from "next/navigation";
 
 export default function AuditLogPage() {
   const firestore = useFirestore();
+  const { userData, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && userData?.role !== 'admin') {
+      router.replace('/dashboard');
+    }
+  }, [userData, authLoading, router]);
   
   const auditLogsQuery = useMemo(() => {
-    if (!firestore) return null;
+    if (!firestore || userData?.role !== 'admin') return null;
     return query(collection(firestore, 'audit_logs'), orderBy('timestamp', 'desc'));
-  }, [firestore]);
+  }, [firestore, userData]);
   
   useEffect(() => {
-    if (!auditLogsQuery) return;
+    if (!auditLogsQuery) {
+        if (userData?.role === 'admin') {
+            setLoading(false);
+        }
+        return;
+    };
     setLoading(true);
     const unsubscribe = onSnapshot(auditLogsQuery, (snapshot) => {
       const logData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as AuditLog));
@@ -40,7 +55,11 @@ export default function AuditLogPage() {
     });
 
     return () => unsubscribe();
-  }, [auditLogsQuery]);
+  }, [auditLogsQuery, userData]);
+
+  if (authLoading || userData?.role !== 'admin') {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="space-y-6">
