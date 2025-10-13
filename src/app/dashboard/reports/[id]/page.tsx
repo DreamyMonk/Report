@@ -15,8 +15,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useAuth } from "@/firebase/auth-provider";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { ShareReportDialog } from "@/components/dashboard/share-report-dialog";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -31,7 +30,6 @@ import { CloseCaseDialog } from "@/components/dashboard/close-case-dialog";
 export default function ReportDetailPage({ params: { id } }: { params: { id: string } }) {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [assignMode, setAssignMode] = useState<'assign' | 'transfer' | 'add'>('assign');
-  const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isCloseCaseDialogOpen, setIsCloseCaseDialogOpen] = useState(false);
   const [message, setMessage] = useState('');
@@ -269,7 +267,6 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
         title: "Status Updated",
         description: `Report status changed to ${selectedStatus.label}.`
       });
-      setIsStatusPopoverOpen(false);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -403,41 +400,28 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-2"><FileText className="h-4 w-4"/>Status</span>
-                 <Popover open={isStatusPopoverOpen} onOpenChange={setIsStatusPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={isStatusPopoverOpen}
-                      className="w-[160px] justify-between capitalize"
-                      style={currentStatus ? { backgroundColor: currentStatus.color, color: '#fff' } : {}}
-                      disabled={isResolved}
-                    >
-                      {report.status}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-0">
-                    <Command>
-                      <CommandInput placeholder="Search status..." />
-                      <CommandEmpty>No status found.</CommandEmpty>
-                      <CommandGroup>
-                        {statuses?.map((status) => (
-                          <CommandItem
-                            key={status.docId}
-                            value={status.docId}
-                            onSelect={handleStatusChange}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }}></div>
-                              {status.label}
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <Select
+                  value={currentStatus?.docId}
+                  onValueChange={handleStatusChange}
+                  disabled={isResolved}
+                >
+                  <SelectTrigger
+                    className="w-[160px] justify-between capitalize"
+                    style={currentStatus ? { backgroundColor: currentStatus.color, color: '#fff' } : {}}
+                  >
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statuses?.map((status) => (
+                      <SelectItem key={status.docId} value={status.docId!}>
+                         <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }}></div>
+                            {status.label}
+                          </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4"/>Submitted</span>
@@ -577,3 +561,5 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     </div>
   );
 }
+
+    
