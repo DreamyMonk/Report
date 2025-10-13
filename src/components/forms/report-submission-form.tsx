@@ -100,7 +100,7 @@ export function ReportSubmissionForm() {
       navigator.clipboard.writeText(generatedId).then(() => {
         toast({
           title: "Copied!",
-          description: "Your report ID has been copied to your clipboard.",
+          description: "Your tracking ID has been copied to your clipboard.",
         });
       });
     }
@@ -108,11 +108,11 @@ export function ReportSubmissionForm() {
   
   const downloadAsTxt = () => {
     if (generatedId) {
-      const blob = new Blob([`Your report ID is: ${generatedId}`], { type: 'text/plain' });
+      const blob = new Blob([`Your report tracking ID is: ${generatedId}`], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'report-id.txt';
+      a.download = 'report-tracking-id.txt';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -234,7 +234,7 @@ export function ReportSubmissionForm() {
         <AlertDialogHeader>
           <AlertDialogTitle>Thank you for your submission.</AlertDialogTitle>
           <AlertDialogDescription>
-            We will take action on your report. Please save this unique ID to track the status of your case.
+            We will take action on your report. Please save this unique tracking ID to track the status of your case.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="my-4 p-4 bg-secondary rounded-lg text-center font-mono text-lg font-semibold tracking-widest">

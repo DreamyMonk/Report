@@ -76,10 +76,10 @@ export default function TrackReportPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-2">
-                <Label htmlFor="report-id">Report ID</Label>
+                <Label htmlFor="report-id">Tracking ID</Label>
                 <Input
                   id="report-id"
-                  placeholder="e.g., IB-K5A8-9G3H1J"
+                  placeholder="e.g., K5A89G3H1J"
                   value={reportId}
                   onChange={(e) => setReportId(e.target.value)}
                   required

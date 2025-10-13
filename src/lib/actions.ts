@@ -28,11 +28,12 @@ const R2 = new S3Client({
 });
 
 
-function generateReportId() {
-  const prefix = 'IB';
-  const timestamp = Date.now().toString(36).slice(-4);
-  const randomPart = Math.random().toString(36).substring(2, 8);
-  return `${prefix}-${timestamp}-${randomPart}`.toUpperCase();
+function generateTrackingId() {
+  return nanoid(12).toUpperCase();
+}
+
+function generateCaseId() {
+    return `WBS-${nanoid(8).toUpperCase()}`;
 }
 
 
@@ -58,10 +59,12 @@ export async function submitReport(prevState: any, formData: FormData) {
     }
     
     try {
-        const reportId = generateReportId();
+        const trackingId = generateTrackingId();
+        const caseId = generateCaseId();
 
         const reportData: Omit<Report, 'docId' | 'submittedAt'> = {
-          id: reportId,
+          id: trackingId,
+          caseId: caseId,
           title,
           content,
           category,
@@ -99,7 +102,7 @@ export async function submitReport(prevState: any, formData: FormData) {
         return {
             message: "Your report has been submitted.",
             success: true,
-            reportId: reportId,
+            reportId: trackingId,
         };
 
     } catch (e: any) {
@@ -275,7 +278,7 @@ export async function inviteUser(prevState: any, formData: FormData) {
         const password = formData.get('password') as string;
         const avatarFile = formData.get('avatar') as File | null;
 
-        if (!password || password.length < 6) {
+        if (!isEditMode && (!password || password.length < 6)) {
             return { message: 'The password must be a string with at least 6 characters.', success: false };
         }
 

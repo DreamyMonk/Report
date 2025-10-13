@@ -14,7 +14,8 @@ export type User = {
 
 export type Report = {
   docId?: string;
-  id: string;
+  id: string; // Public tracking ID
+  caseId: string; // Internal case ID
   title: string;
   content: string;
   category: string;

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud, FileX2 } from "lucide-react";
+import { Bot, Calendar, User, Shield, Tag, FileText, EyeOff, Lock, Send, ChevronsUpDown, Phone, Share2, Users, UserPlus, Replace, Paperclip, Link as LinkIcon, Loader2, UploadCloud, FileX2, Fingerprint } from "lucide-react";
 import { format } from "date-fns";
 import { useFirestore } from "@/firebase";
 import { Report, Message, User as AppUser, CaseStatus, Attachment } from "@/lib/types";
@@ -313,6 +313,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
             </Badge>
             </div>
             <h1 className="font-headline text-4xl font-bold break-words">{report.title}</h1>
+            <p className="text-muted-foreground font-mono mt-1">Case ID: {report.caseId}</p>
         </div>
         <div className="flex items-center gap-2 ml-4 shrink-0">
             <Button variant="destructive" onClick={() => setIsCloseCaseDialogOpen(true)} disabled={isResolved}>
@@ -396,6 +397,10 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
               <CardTitle>Case Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
+               <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center gap-2"><Fingerprint className="h-4 w-4"/>Tracking ID</span>
+                <span className="font-medium font-mono">{report.id}</span>
+              </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-2"><FileText className="h-4 w-4"/>Status</span>
                  <Popover open={isStatusPopoverOpen} onOpenChange={setIsStatusPopoverOpen}>
@@ -404,7 +409,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                       variant="outline"
                       role="combobox"
                       aria-expanded={isStatusPopoverOpen}
-                      className="w-[200px] justify-between capitalize"
+                      className="w-[160px] justify-between capitalize"
                       style={currentStatus ? { backgroundColor: currentStatus.color, color: '#fff' } : {}}
                       disabled={isResolved}
                     >
@@ -572,5 +577,3 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     </div>
   );
 }
-
-    

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, Landmark, Building, Briefcase, UserCheck, Paperclip, Link as LinkIcon, Loader2, UploadCloud, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, CheckCircle, Hourglass, FileText, XCircle, Shield, User, Calendar, Landmark, Building, Briefcase, UserCheck, Paperclip, Link as LinkIcon, Loader2, UploadCloud, ChevronDown, ChevronUp, Fingerprint } from "lucide-react";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -399,6 +399,10 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                             <CardTitle>Case Details</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm">
+                            <div className="flex items-start justify-between">
+                                <span className="text-muted-foreground flex items-center gap-2"><Fingerprint className="h-4 w-4"/>Case ID</span>
+                                <span className="font-medium font-mono text-right">{report.caseId}</span>
+                            </div>
                              <div className="flex items-start justify-between">
                                 <span className="text-muted-foreground flex items-center gap-2"><FileText className="h-4 w-4"/>Status</span>
                                 <span className="font-medium capitalize text-right">{report.status}</span>
