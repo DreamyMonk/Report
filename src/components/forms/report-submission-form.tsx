@@ -49,7 +49,7 @@ export function ReportSubmissionForm() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [generatedId, setGeneratedId] = useState<string | null>(null);
   const firestore = useFirestore();
-  const [submissionType, setSubmissionType] = useState('anonymous');
+  const [submissionType, setSubmissionType] = useState('confidential');
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export function ReportSubmissionForm() {
         setShowSuccessDialog(true);
         const form = document.getElementById('report-submission-form') as HTMLFormElement;
         form?.reset();
-        setSubmissionType('anonymous');
+        setSubmissionType('confidential');
 
       } else {
         toast({
@@ -137,19 +137,6 @@ export function ReportSubmissionForm() {
         >
           <div>
               <Label className="cursor-pointer">
-              <Card className={`hover:border-primary/50 transition-colors ${submissionType === 'anonymous' ? 'ring-2 ring-primary border-primary' : 'border-border'}`}>
-                  <CardContent className="p-4 flex items-center gap-4">
-                      <RadioGroupItem value="anonymous" id="anonymous" />
-                      <div className="space-y-1">
-                          <p className="font-medium">Submit Anonymously</p>
-                          <p className="text-sm text-muted-foreground">Your identity is completely hidden. You can optionally provide an email for updates.</p>
-                      </div>
-                  </CardContent>
-              </Card>
-              </Label>
-          </div>
-          <div>
-              <Label className="cursor-pointer">
                 <Card className={`hover:border-primary/50 transition-colors ${submissionType === 'confidential' ? 'ring-2 ring-primary border-primary' : 'border-border'}`}>
                   <CardContent className="p-4 flex items-center gap-4">
                       <RadioGroupItem value="confidential" id="confidential" />
@@ -159,6 +146,19 @@ export function ReportSubmissionForm() {
                       </div>
                   </CardContent>
                 </Card>
+              </Label>
+          </div>
+          <div>
+              <Label className="cursor-pointer">
+              <Card className={`hover:border-primary/50 transition-colors ${submissionType === 'anonymous' ? 'ring-2 ring-primary border-primary' : 'border-border'}`}>
+                  <CardContent className="p-4 flex items-center gap-4">
+                      <RadioGroupItem value="anonymous" id="anonymous" />
+                      <div className="space-y-1">
+                          <p className="font-medium">Submit Anonymously</p>
+                          <p className="text-sm text-muted-foreground">Your identity is completely hidden. You can optionally provide an email for updates.</p>
+                      </div>
+                  </CardContent>
+              </Card>
               </Label>
           </div>
         </RadioGroup>
