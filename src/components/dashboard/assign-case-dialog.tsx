@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Report, User } from "@/lib/types";
-import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, where, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
+import { collection, query, where, doc, updateDoc, addDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { useMemo, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -22,6 +22,8 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Checkbox } from "../ui/checkbox";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 interface AssignCaseDialogProps {
   open: boolean;
@@ -39,11 +41,27 @@ export function AssignCaseDialog({ open, onOpenChange, report, mode = 'assign' }
     return query(collection(firestore, 'users'), where('role', 'in', ['admin', 'officer']));
   }, [firestore]);
 
-  const { data: users } = useCollection<User>(usersQuery);
+  const [users, setUsers] = useState<User[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!usersQuery) return;
+    const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
+        const usersData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as User));
+        setUsers(usersData);
+    }, (error) => {
+        console.error("Error fetching users:", error);
+        const permissionError = new FirestorePermissionError({
+          path: (usersQuery as any)._query.path.toString(),
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
+    return () => unsubscribe();
+  }, [usersQuery]);
 
   const isTransferOrAdd = mode === 'transfer' || mode === 'add';
 

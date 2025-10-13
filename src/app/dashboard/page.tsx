@@ -4,17 +4,22 @@ import { OverviewCards } from "@/components/dashboard/overview-cards";
 import { ReportsTable } from "@/components/dashboard/reports-table";
 import { ReportsByStatusChart } from "@/components/dashboard/reports-by-status-chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCollection, useFirestore } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { Report, AuditLog } from "@/lib/types";
-import { collection, query, where, orderBy, limit } from "firebase/firestore";
-import { useMemo } from "react";
+import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { useMemo, useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export default function DashboardPage() {
   const firestore = useFirestore();
+  const [reports, setReports] = useState<Report[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditLogsLoading, setAuditLogsLoading] = useState(true);
   
   const highPriorityReportsQuery = useMemo(() => {
     if (!firestore) return null;
@@ -32,8 +37,40 @@ export default function DashboardPage() {
     return query(collection(firestore, 'audit_logs'), orderBy('timestamp', 'desc'), limit(5));
   }, [firestore]);
 
-  const { data: reports } = useCollection<Report>(highPriorityReportsQuery);
-  const { data: auditLogs, loading: auditLogsLoading } = useCollection<AuditLog>(auditLogsQuery);
+  useEffect(() => {
+    if (!highPriorityReportsQuery) return;
+    const unsubscribe = onSnapshot(highPriorityReportsQuery, (snapshot) => {
+        const reportData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Report));
+        setReports(reportData);
+    }, (error) => {
+        console.error("Error fetching high priority reports:", error);
+        const permissionError = new FirestorePermissionError({
+          path: (highPriorityReportsQuery as any)._query.path.toString(),
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
+    return () => unsubscribe();
+  }, [highPriorityReportsQuery]);
+
+  useEffect(() => {
+    if (!auditLogsQuery) return;
+    setAuditLogsLoading(true);
+    const unsubscribe = onSnapshot(auditLogsQuery, (snapshot) => {
+        const logData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as AuditLog));
+        setAuditLogs(logData);
+        setAuditLogsLoading(false);
+    }, (error) => {
+        console.error("Error fetching audit logs:", error);
+        const permissionError = new FirestorePermissionError({
+          path: (auditLogsQuery as any)._query.path.toString(),
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setAuditLogsLoading(false);
+    });
+    return () => unsubscribe();
+  }, [auditLogsQuery]);
 
 
   return (
@@ -97,4 +134,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
