@@ -376,11 +376,11 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
                         <CardContent className="space-y-3 text-sm">
                              <div className="flex items-start justify-between">
                                 <span className="text-muted-foreground flex items-center gap-2"><FileText className="h-4 w-4"/>Status</span>
-                                <span className="font-medium capitalize">{report.status}</span>
+                                <span className="font-medium capitalize text-right">{report.status}</span>
                             </div>
                             <div className="flex items-start justify-between">
                                 <span className="text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4"/>Submitted</span>
-                                <span>{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</span>
+                                <span className="text-right">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</span>
                             </div>
                             <div className="flex items-start justify-between">
                                 <span className="text-muted-foreground flex items-center gap-2"><Shield className="h-4 w-4"/>Severity</span>
@@ -475,4 +475,3 @@ export default function TrackReportDetailPage({ params: { id } }: { params: { id
     </div>
   );
 }
-
