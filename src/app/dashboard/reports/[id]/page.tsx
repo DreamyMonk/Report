@@ -332,7 +332,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
               <CardTitle>Report Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+              <p className="text-foreground leading-relaxed whitespace-pre-wrap break-words">
                 {report.content}
               </p>
             </CardContent>
