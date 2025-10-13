@@ -270,23 +270,10 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     notFound();
   }
 
-  const statusInfo: { [key: string]: { icon: React.ElementType, text: string }} = {
-    New: { icon: FileText, text: "Report submitted and pending review." },
-    "In Progress": { icon: Hourglass, text: "An investigation is currently underway." },
-    Resolved: { icon: CheckCircle, text: "The investigation is complete and the case is closed." },
-    Dismissed: { icon: XCircle, text: "The report has been reviewed and dismissed." },
-    "Forwarded to Upper Management": { icon: Landmark, text: "This case has been forwarded for further review."}
-  };
-
   const isCaseAssigned = report.assignees && report.assignees.length > 0;
+  const isResolved = report.status === 'Resolved';
   
-  const customStatus = (report.status !== 'New' && report.status !== 'In Progress') ? report.status : null;
-
-
-  const currentStatusInfo = statusInfo[report.status] || { icon: Hourglass, text: "The status has been updated."};
-  const CurrentStatusIcon = currentStatusInfo.icon;
-  const currentStatusColor = statuses?.find(s => s.label === report.status)?.color || '#64748b';
-  const isResolved = report.status === 'Resolved' || report.status === 'Dismissed';
+  const currentStatusInfo = statuses.find(s => s.label === report.status);
 
   return (
     <div className="min-h-screen bg-secondary/50">
@@ -306,23 +293,23 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                            <div className="relative pl-6">
                               <div className="absolute left-0 top-0 h-full w-0.5 bg-border -translate-x-1/2 ml-3"></div>
                               
-                              {customStatus && (
+                              {isResolved && (
                                 <div className="relative mb-8">
-                                  <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: currentStatusColor}}></div>
+                                  <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: statuses?.find(s => s.label === 'Resolved')?.color || '#ef4444' }}></div>
                                   <div className="pl-6">
-                                    <p className="font-semibold flex items-center gap-2"><CurrentStatusIcon className="h-4 w-4" />{customStatus}</p>
-                                    <p className="text-sm text-muted-foreground">{statusInfo[customStatus]?.text || "The case has been updated."}</p>
+                                    <p className="font-semibold flex items-center gap-2"><CheckCircle className="h-4 w-4" />Resolved</p>
+                                    <p className="text-sm text-muted-foreground">The investigation is complete and the case is closed.</p>
                                     <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
                                   </div>
                                 </div>
                               )}
                               
-                              {isCaseAssigned && !customStatus && (
+                              {isCaseAssigned && !isResolved && (
                                 <div className="relative mb-8">
                                     <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: statuses?.find(s => s.label === 'In Progress')?.color || '#f97316' }}></div>
                                     <div className="pl-6">
                                     <p className="font-semibold flex items-center gap-2"><Hourglass className="h-4 w-4" />In Progress</p>
-                                    <p className="text-sm text-muted-foreground">An investigation is currently underway.</p>
+                                    <p className="text-sm text-muted-foreground">A case officer has been assigned and an investigation is underway.</p>
                                      <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
                                     </div>
                                 </div>
@@ -483,7 +470,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                           <div className="mt-4 pt-4 border-t">
                               <Label htmlFor="reporter-file-upload" className="text-sm font-medium mb-2 block">Add Attachment</Label>
                                <div className="flex items-center gap-2">
-                                  <Input id="reporter-file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isUploading || isResolved}/>
+                                  <Input id="reporter-file-upload" type="file" className="hidden" onChange={handleFileChange} ref={fileInputRef} disabled={isUploading || isResolved} />
                                   <Label htmlFor="reporter-file-upload" className={cn("flex-grow min-w-0", !fileToUpload && "text-muted-foreground")}>
                                       <div className="border-2 border-dashed rounded-md px-3 py-2 text-sm cursor-pointer text-center hover:bg-muted truncate">
                                       {fileToUpload ? fileToUpload.name : 'Click to select a file'}
@@ -503,5 +490,3 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     </div>
   );
 }
-
-    

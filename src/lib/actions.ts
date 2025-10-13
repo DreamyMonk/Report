@@ -391,8 +391,6 @@ export async function initializeData(db: Firestore) {
       { label: 'New', color: '#3b82f6', isDefault: true },
       { label: 'In Progress', color: '#f97316', isDefault: true },
       { label: 'Resolved', color: '#ef4444', isDefault: true },
-      { label: 'Dismissed', color: '#64748b', isDefault: false },
-      { label: 'Forwarded to Upper Management', color: '#8b5cf6', isDefault: false }
     ];
     for (const status of defaultStatuses) {
       await statusesCollection.add(status);
