@@ -191,18 +191,15 @@ export default function SettingsPage() {
           <div>
             <h3 className="font-medium mb-4">Current Statuses</h3>
             <div className="flex flex-wrap gap-2">
-              {statuses?.filter(s => s.isDefault === true).map(status => (
-                <div key={status.docId} className="flex items-center gap-2 rounded-full border pl-3 pr-1 py-1 text-sm text-white" style={{ backgroundColor: status.color }}>
-                  <Lock className="h-3 w-3" />
+              {statuses?.map(status => (
+                <div key={status.docId} className="flex items-center gap-2 rounded-full border pl-3 pr-1 py-1 text-sm" style={status.isDefault ? { backgroundColor: status.color, color: 'white' } : {}}>
+                  {status.isDefault && <Lock className="h-3 w-3" />}
                   <span>{status.label}</span>
-                </div>
-              ))}
-              {statuses?.filter(s => s.isDefault === false).map(status => (
-                <div key={status.docId} className="flex items-center gap-2 rounded-full border pl-3 pr-1 py-1 text-sm text-white" style={{ backgroundColor: status.color }}>
-                  <span>{status.label}</span>
-                  <button onClick={() => setItemToDelete({ id: status.docId!, label: status.label, type: 'status' })} className="h-4 w-4 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/40">
-                    <X className="h-3 w-3" />
-                  </button>
+                  {!status.isDefault && (
+                     <button onClick={() => setItemToDelete({ id: status.docId!, label: status.label, type: 'status' })} className="h-4 w-4 rounded-full flex items-center justify-center bg-muted-foreground/20 hover:bg-muted-foreground/40 text-secondary-foreground">
+                        <X className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -315,3 +312,5 @@ export default function SettingsPage() {
     </>
   );
 }
+
+    
