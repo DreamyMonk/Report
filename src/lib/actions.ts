@@ -77,7 +77,6 @@ export async function submitReport(prevState: any, formData: FormData) {
           status: 'New',
           severity: 'Medium', // Default severity
           assignees: [],
-          // AI fields are omitted
         };
         
         // Remove undefined properties before sending to Firestore
@@ -417,3 +416,5 @@ export async function initializeData(db: Firestore) {
      console.log('Seeded default content.');
   }
 }
+
+    
