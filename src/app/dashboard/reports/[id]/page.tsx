@@ -273,11 +273,6 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
     const selectedStatus = statuses.find(s => s.docId === statusId);
     if (!selectedStatus) return;
 
-    if (selectedStatus.label === 'Resolved') {
-      setIsCloseCaseDialogOpen(true);
-      return;
-    }
-
     try {
       const reportRef = doc(firestore, 'reports', report.docId);
       await updateDoc(reportRef, {
@@ -316,6 +311,10 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   const currentStatus = useMemo(() => {
     return statuses?.find(s => s.label === report?.status);
   }, [statuses, report]);
+
+  const selectableStatuses = useMemo(() => {
+    return statuses?.filter(s => s.label !== 'Resolved') || [];
+  }, [statuses]);
 
 
   if (loading) {
@@ -442,7 +441,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    {statuses?.map((status) => (
+                    {selectableStatuses?.map((status) => (
                       <SelectItem key={status.docId} value={status.docId!}>
                          <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }}></div>
