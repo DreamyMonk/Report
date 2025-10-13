@@ -67,8 +67,8 @@ export default function AllReportsPage() {
              <Tabs value={statusFilter} onValueChange={setStatusFilter}>
               <TabsList>
                 <TabsTrigger value="All">All</TabsTrigger>
-                <TabsTrigger value="New">New</TabsTrigger>
-                <TabsTrigger value="In Progress">In Progress</TabsTrigger>
+                <TabsTrigger value="Report Submitted">New</TabsTrigger>
+                <TabsTrigger value="Case Officer Assigned">In Progress</TabsTrigger>
                 <TabsTrigger value="Resolved">Resolved</TabsTrigger>
               </TabsList>
             </Tabs>

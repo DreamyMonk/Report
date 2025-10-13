@@ -74,7 +74,7 @@ export async function submitReport(prevState: any, formData: FormData) {
             email: email || undefined,
             phone: phone || undefined,
           },
-          status: 'New',
+          status: 'Report Submitted',
           severity: 'Medium', // Default severity
           assignees: [],
         };
@@ -388,8 +388,8 @@ export async function initializeData(db: Firestore) {
   const statusesSnapshot = await statusesCollection.get();
   if (statusesSnapshot.empty) {
     const defaultStatuses = [
-      { label: 'New', color: '#3b82f6', isDefault: true },
-      { label: 'In Progress', color: '#f97316', isDefault: true },
+      { label: 'Report Submitted', color: '#3b82f6', isDefault: true },
+      { label: 'Case Officer Assigned', color: '#f97316', isDefault: true },
       { label: 'Resolved', color: '#ef4444', isDefault: true },
     ];
     for (const status of defaultStatuses) {

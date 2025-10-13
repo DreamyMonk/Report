@@ -306,9 +306,9 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                               
                               {isCaseAssigned && !isResolved && (
                                 <div className="relative mb-8">
-                                    <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: statuses?.find(s => s.label === 'In Progress')?.color || '#f97316' }}></div>
+                                    <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: statuses?.find(s => s.label === 'Case Officer Assigned')?.color || '#f97316' }}></div>
                                     <div className="pl-6">
-                                    <p className="font-semibold flex items-center gap-2"><Hourglass className="h-4 w-4" />In Progress</p>
+                                    <p className="font-semibold flex items-center gap-2"><Hourglass className="h-4 w-4" />Case Officer Assigned</p>
                                     <p className="text-sm text-muted-foreground">A case officer has been assigned and an investigation is underway.</p>
                                      <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
                                     </div>
@@ -316,7 +316,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                               )}
                               
                                <div className="relative">
-                                <div className="absolute left-0 top-1 w-3 h-3 rounded-full bg-blue-500"></div>
+                                <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: statuses?.find(s => s.label === 'Report Submitted')?.color || '#3b82f6' }}></div>
                                 <div className="pl-6">
                                   <p className="font-semibold flex items-center gap-2"><FileText className="h-4 w-4" />Report Submitted</p>
                                   <p className="text-sm text-muted-foreground">The initial report was received and is awaiting assignment.</p>

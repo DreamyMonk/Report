@@ -29,7 +29,7 @@ export default function DashboardPage() {
     if (userData.role === 'admin') {
       return query(
         collection(firestore, 'reports'),
-        where('status', '==', 'New'),
+        where('status', '==', 'Report Submitted'),
         where('severity', 'in', ['High', 'Critical']),
         orderBy('submittedAt', 'desc'),
         limit(5)
@@ -39,7 +39,7 @@ export default function DashboardPage() {
     return query(
       collection(firestore, 'reports'),
       where('assignees', 'array-contains', user.uid),
-      where('status', '==', 'New'),
+      where('status', '==', 'Report Submitted'),
       where('severity', 'in', ['High', 'Critical']),
       orderBy('submittedAt', 'desc'),
       limit(5)
