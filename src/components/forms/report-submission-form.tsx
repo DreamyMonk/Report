@@ -108,11 +108,11 @@ export function ReportSubmissionForm() {
   
   const downloadAsTxt = () => {
     if (generatedId) {
-      const blob = new Blob([`Your report tracking ID is: ${generatedId}`], { type: 'text/plain' });
+      const blob = new Blob([`Your submission tracking ID is: ${generatedId}`], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'report-tracking-id.txt';
+      a.download = 'submission-tracking-id.txt';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -184,8 +184,8 @@ export function ReportSubmissionForm() {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="title">Report Title</Label>
-        <Input name="title" id="title" placeholder="e.g., Unsafe working conditions in warehouse" required />
+        <Label htmlFor="title">Title / Subject</Label>
+        <Input name="title" id="title" placeholder="e.g., Suggestion for improving team collaboration" required />
       </div>
 
       <div className="space-y-2">
@@ -203,11 +203,11 @@ export function ReportSubmissionForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="content">Detailed Description</Label>
+        <Label htmlFor="content">Detailed Feedback</Label>
         <Textarea
           name="content"
           id="content"
-          placeholder="Please provide as much detail as possible. Include dates, times, locations, and names of individuals involved if known."
+          placeholder="Please provide as much detail as possible. What is your feedback? What would you like to see changed or improved?"
           className="min-h-[150px]"
           required
         />
@@ -234,7 +234,7 @@ export function ReportSubmissionForm() {
         <AlertDialogHeader>
           <AlertDialogTitle>Thank you for your submission.</AlertDialogTitle>
           <AlertDialogDescription>
-            We will take action on your report. Please save this unique tracking ID to track the status of your case.
+            We will review your feedback. Please save this unique tracking ID to track the status of your submission.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="my-4 p-4 bg-secondary rounded-lg text-center font-mono text-lg font-semibold tracking-widest">

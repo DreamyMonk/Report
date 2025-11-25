@@ -39,7 +39,7 @@ export default function AllReportsPage() {
       const reportsData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Report));
       setReports(reportsData);
     }, (error) => {
-        console.error("Error fetching all reports:", error);
+        console.error("Error fetching all cases:", error);
         const permissionError = new FirestorePermissionError({
           path: 'reports',
           operation: 'list',
@@ -56,11 +56,11 @@ export default function AllReportsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-headline text-3xl font-bold tracking-tight">All Reports</h1>
+      <h1 className="font-headline text-3xl font-bold tracking-tight">All Cases</h1>
       <Card>
         <CardHeader>
           <CardTitle>Case Management</CardTitle>
-          <CardDescription>Review, assign, and track all submitted reports.</CardDescription>
+          <CardDescription>Review, assign, and track all submitted cases.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center py-4">

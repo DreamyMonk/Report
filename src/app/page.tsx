@@ -51,7 +51,7 @@ export default function Home() {
         </Link>
         <div className="flex items-center gap-2">
            <Button asChild>
-              <Link href="/track">View Case</Link>
+              <Link href="/track">View Submission</Link>
             </Button>
         </div>
       </header>
@@ -59,9 +59,9 @@ export default function Home() {
         <div className="container mx-auto max-w-4xl space-y-12">
              <Card className="w-full">
                 <CardHeader>
-                    <CardTitle className="font-headline text-3xl">Submit a Report</CardTitle>
+                    <CardTitle className="font-headline text-3xl">Submit Feedback</CardTitle>
                     <CardDescription>
-                    Your voice matters. Report misconduct securely. You can choose to report anonymously or confidentially.
+                    Your voice matters. Submit feedback securely. You can choose to submit anonymously or confidentially.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -69,7 +69,7 @@ export default function Home() {
                 </CardContent>
             </Card>
             <div className="space-y-6 pt-2">
-                <h2 className="font-headline text-2xl font-bold text-center">How to Submit a Good Report</h2>
+                <h2 className="font-headline text-2xl font-bold text-center">How to Submit Good Feedback</h2>
                  <Card>
                     <CardContent className="p-6">
                          <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
@@ -80,14 +80,14 @@ export default function Home() {
                  <Alert variant="default" className="border-blue-500/50 text-blue-900 dark:text-blue-200 [&>svg]:text-blue-600 dark:[&>svg]:text-blue-400">
                     <Info className="h-4 w-4" />
                     <AlertDescription>
-                        This form does not collect your IP address, If you choose "Confidential", your details will only be visible to the assigned case officer(s). To maintain full anonymity, avoid including details in your report that could inadvertently identify you.
+                        This form does not collect your IP address, If you choose "Confidential", your details will only be visible to the assigned case officer(s). To maintain full anonymity, avoid including details in your feedback that could inadvertently identify you.
                     </AlertDescription>
                 </Alert>
             </div>
         </div>
       </main>
       <footer className="py-4 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} Whistleblower Management Portal. All rights reserved.
+        © {new Date().getFullYear()} Feedback Management. All rights reserved.
       </footer>
     </div>
   );

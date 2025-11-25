@@ -56,13 +56,13 @@ export default function SharedReportPage({ params: { shareId } }: { params: { sh
         }
         setLoading(false);
       }, (reportError) => {
-        console.error("Error fetching shared report:", reportError);
+        console.error("Error fetching shared case:", reportError);
         const permissionError = new FirestorePermissionError({
           path: reportRef.path,
           operation: 'get',
         });
         errorEmitter.emit('permission-error', permissionError);
-        setError("Could not load the report details.");
+        setError("Could not load the case details.");
         setLoading(false);
       });
 
@@ -85,7 +85,7 @@ export default function SharedReportPage({ params: { shareId } }: { params: { sh
   if (loading) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/50">
-            <p>Loading report...</p>
+            <p>Loading case...</p>
         </div>
     )
   }
@@ -118,9 +118,9 @@ export default function SharedReportPage({ params: { shareId } }: { params: { sh
         <div className="container mx-auto flex items-center justify-between">
            <div className="flex items-center gap-2">
               <Logo className="h-6 w-6 text-primary" />
-              <span className="font-headline text-xl font-bold">Whistleblower Management Portal</span>
+              <span className="font-headline text-xl font-bold">Feedback Management Portal</span>
             </div>
-            <p className="text-sm text-muted-foreground">Public Report View</p>
+            <p className="text-sm text-muted-foreground">Public Case View</p>
         </div>
        </header>
         <main className="container mx-auto max-w-3xl py-12 px-4">
@@ -140,7 +140,7 @@ export default function SharedReportPage({ params: { shareId } }: { params: { sh
                     <div className="md:col-span-2 space-y-6">
                     <Card>
                         <CardHeader>
-                        <CardTitle>Report Details</CardTitle>
+                        <CardTitle>Details</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                         <p className="text-foreground leading-relaxed whitespace-pre-wrap">

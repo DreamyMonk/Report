@@ -33,7 +33,7 @@ function generateTrackingId() {
 }
 
 function generateCaseId() {
-    return `WBS-${nanoid(8).toUpperCase()}`;
+    return `CS-${nanoid(8).toUpperCase()}`;
 }
 
 export async function createInternalCase(prevState: any, formData: FormData) {
@@ -173,13 +173,13 @@ export async function submitReport(prevState: any, formData: FormData) {
         await db.collection('audit_logs').add({
             reportId: reportRef.id,
             actor: { id: 'system', name: 'System' },
-            action: 'submitted a new report',
+            action: 'submitted new feedback',
             timestamp: new Date()
         });
         
         revalidatePath('/');
         return {
-            message: "Your report has been submitted.",
+            message: "Your feedback has been submitted.",
             success: true,
             reportId: trackingId,
         };
@@ -443,7 +443,7 @@ export async function deleteReport(prevState: any, formData: FormData) {
         const reportId = formData.get('reportId') as string;
 
         if (!reportId) {
-            return { message: 'Report ID is missing.', success: false };
+            return { message: 'Case ID is missing.', success: false };
         }
         
         // Note: This does not delete subcollections like messages or attachments.
@@ -452,9 +452,9 @@ export async function deleteReport(prevState: any, formData: FormData) {
 
         revalidatePath('/dashboard/reports');
         revalidatePath('/dashboard');
-        return { message: 'Report has been successfully deleted.', success: true };
+        return { message: 'Case has been successfully deleted.', success: true };
     } catch (error: any) {
-        return { message: error.message || 'Failed to delete report.', success: false };
+        return { message: error.message || 'Failed to delete case.', success: false };
     }
 }
 
@@ -482,10 +482,10 @@ export async function initializeData(db: Firestore) {
   const categoriesSnapshot = await categoriesCollection.get();
   if (categoriesSnapshot.empty) {
     const defaultCategories = [
-      { label: 'Financial Misconduct' },
-      { label: 'Harassment or Discrimination' },
-      { label: 'Health and Safety Violations' },
-      { label: 'Data Privacy Breach' },
+      { label: 'General Inquiry' },
+      { label: 'Bug Report' },
+      { label: 'Feature Request' },
+      { label: 'Complaint' },
       { label: 'Other' },
     ];
     for (const category of defaultCategories) {
@@ -499,17 +499,17 @@ export async function initializeData(db: Firestore) {
   if (!contentDoc.exists) {
     await contentCollection.doc('siteCopy').set({
         submissionGuidelines: `**1. Be Specific and Factual:**
-- Provide clear and concise details about the incident.
-- Include dates, times, locations, and the names of people involved.
-- Stick to the facts and avoid speculation or personal feelings.
+- Provide clear and concise details.
+- Include context, examples, and any relevant background information.
+- Stick to the facts and describe your experience or suggestion clearly.
 
 **2. Provide Evidence (if possible):**
-- If you have any documents, photos, or other evidence, please mention them in your report. You can attach files to your submission.
-- Do not put yourself at risk to obtain evidence. Your safety is paramount.
+- If you have any documents, screenshots, or other evidence, please mention them. You can attach files to your submission.
+- This helps us understand your feedback more quickly.
 
 **3. Explain the Impact:**
-- Describe how the issue has affected you, others, or the organization.
-- This helps us understand the severity and urgency of the situation.
+- Describe how the issue has affected you or others.
+- Explain what outcome you would like to see.
         `
     });
      console.log('Seeded default content.');

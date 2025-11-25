@@ -57,7 +57,7 @@ export default function DashboardPage() {
         let reportData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Report));
         setReports(reportData);
     }, (error) => {
-        console.error("Error fetching high priority reports:", error);
+        console.error("Error fetching high priority cases:", error);
         const permissionError = new FirestorePermissionError({
           path: 'reports',
           operation: 'list',
@@ -95,8 +95,8 @@ export default function DashboardPage() {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Recent High-Priority Reports</CardTitle>
-              <CardDescription>Newly submitted reports marked with high severity.</CardDescription>
+              <CardTitle>Recent High-Priority Cases</CardTitle>
+              <CardDescription>Newly submitted cases marked with high severity.</CardDescription>
             </CardHeader>
             <CardContent>
               <ReportsTable reports={reports || []} />
@@ -124,7 +124,7 @@ export default function DashboardPage() {
                           {log.reportId && (
                             <Button variant="link" asChild className="p-1 h-auto">
                               <Link href={`/dashboard/reports/${log.reportId}`}>
-                                (report)
+                                (case)
                               </Link>
                             </Button>
                           )}

@@ -61,7 +61,7 @@ export function ReportTableActions({ report }: { report: Report }) {
                 className="text-destructive focus:text-destructive focus:bg-destructive/10"
                 onClick={() => setIsDeleteDialogOpen(true)}
               >
-                Delete Report
+                Delete Case
               </DropdownMenuItem>
             </>
           )}

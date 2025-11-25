@@ -31,7 +31,7 @@ import { ForcePasswordChangeDialog } from "@/components/dashboard/force-password
 
 const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
-    { href: "/dashboard/reports", icon: FileText, label: "All Reports" },
+    { href: "/dashboard/reports", icon: FileText, label: "All Cases" },
     { href: "/dashboard/create", icon: PlusCircle, label: "Create Case" },
     { href: "/dashboard/users", icon: Users, label: "Users" },
     { href: "/dashboard/audit-log", icon: History, label: "Audit Log" },
@@ -84,7 +84,7 @@ export default function DashboardLayout({
                   isCollapsed ? "opacity-0 w-0" : "opacity-100"
                 )}
               >
-                Whistleblower
+                Feedback
               </span>
             </Link>
           </div>
@@ -144,7 +144,7 @@ export default function DashboardLayout({
             <div className="relative hidden md:block">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search reports..."
+                placeholder="Search cases..."
                 className="w-full rounded-lg bg-secondary pl-8 md:w-[200px] lg:w-[320px]"
               />
             </div>

@@ -83,7 +83,7 @@ export default function AuditLogPage() {
                     {log.reportId && (
                        <Button variant="link" asChild className="p-1 h-auto">
                         <Link href={`/dashboard/reports/${log.reportId}`}>
-                          (view report)
+                          (view case)
                         </Link>
                       </Button>
                     )}

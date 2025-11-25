@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og'
+import { MessageSquare } from 'lucide-react';
 
 export const runtime = 'edge'
 export const size = { width: 32, height: 32 }
@@ -27,12 +28,11 @@ export default function Icon() {
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2.5"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <path d="m9 12 2 2 4-4" />
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
       </div>
     ),

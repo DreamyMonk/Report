@@ -11,12 +11,12 @@ export default function LoginPage() {
             <Logo className="h-8 w-8 text-primary" />
           </Link>
           <h1 className="font-headline text-3xl font-bold">Case Portal</h1>
-          <p className="text-muted-foreground">Sign in to manage reports</p>
+          <p className="text-muted-foreground">Sign in to manage cases</p>
         </div>
         <LoginForm />
         <p className="mt-4 text-center text-sm text-muted-foreground">
           <Link href="/" className="underline">
-            Back to report submission
+            Back to submission form
           </Link>
         </p>
       </div>

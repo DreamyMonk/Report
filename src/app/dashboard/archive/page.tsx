@@ -118,7 +118,7 @@ export default function ArchivePage() {
       const reportsData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() } as Report));
       setReports(reportsData);
     }, (error) => {
-        console.error("Error fetching resolved reports:", error);
+        console.error("Error fetching resolved cases:", error);
         const permissionError = new FirestorePermissionError({
           path: 'reports',
           operation: 'list',
@@ -152,7 +152,7 @@ export default function ArchivePage() {
       <h1 className="font-headline text-3xl font-bold tracking-tight">Resolved Case Archive</h1>
       <Card>
         <CardHeader>
-          <CardTitle>Archived Reports</CardTitle>
+          <CardTitle>Archived Cases</CardTitle>
           <CardDescription>A complete history of all resolved cases.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -198,7 +198,7 @@ export default function ArchivePage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={columns.length} className="h-24 text-center">
-                      No resolved reports found.
+                      No resolved cases found.
                     </TableCell>
                   </TableRow>
                 )}
@@ -207,7 +207,7 @@ export default function ArchivePage() {
           </div>
           <div className="flex items-center justify-end space-x-2 py-4">
             <div className="flex-1 text-sm text-muted-foreground">
-              {table.getFilteredRowModel().rows.length} report(s).
+              {table.getFilteredRowModel().rows.length} case(s).
             </div>
             <div className="space-x-2">
               <Button

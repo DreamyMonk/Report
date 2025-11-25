@@ -63,7 +63,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
       }
       setLoading(false);
     }, (error) => {
-        console.error("Error fetching report:", error);
+        console.error("Error fetching case:", error);
         const permissionError = new FirestorePermissionError({
           path: reportRef.path,
           operation: 'get',
@@ -258,7 +258,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
 
       toast({
         title: "Severity Updated",
-        description: `Report severity changed to ${severity}.`,
+        description: `Case severity changed to ${severity}.`,
       });
     } catch (error: any) {
       toast({
@@ -294,7 +294,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
 
       toast({
         title: "Status Updated",
-        description: `Report status changed to ${selectedStatus.label}.`
+        description: `Case status changed to ${selectedStatus.label}.`
       });
     } catch (error: any) {
       toast({
@@ -317,7 +317,8 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
   const selectableStatuses = useMemo(() => {
     if (!statuses) return [];
     // Exclude the final "Resolved" status from the dropdown
-    return statuses.filter(s => s.label !== "Resolved");
+    const excluded = ["Resolved"];
+    return statuses.filter(s => !excluded.includes(s.label));
   }, [statuses]);
 
 
@@ -364,7 +365,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
         <div className="md:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Report Details</CardTitle>
+              <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-foreground leading-relaxed whitespace-pre-wrap break-words">
@@ -376,7 +377,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
           <Card>
             <CardHeader>
                 <CardTitle>Communication Channel</CardTitle>
-                <CardDescription>{isChatDisabled ? chatDisabledMessage : 'Communicate with the reporter. Your messages will appear with your name and role.'}</CardDescription>
+                <CardDescription>{isChatDisabled ? chatDisabledMessage : 'Communicate with the submitter. Your messages will appear with your name and role.'}</CardDescription>
             </CardHeader>
             <CardContent>
                  <div className="space-y-4">
@@ -522,19 +523,19 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
               </div>
               {isConfidential && report.reporter?.name && (
                 <div className="flex items-start justify-between gap-4">
-                  <span className="text-muted-foreground flex items-center gap-2 shrink-0"><User className="h-4 w-4"/>Reporter Name</span>
+                  <span className="text-muted-foreground flex items-center gap-2 shrink-0"><User className="h-4 w-4"/>Submitter Name</span>
                   <span className="font-medium text-right break-words">{report.reporter.name}</span>
                 </div>
               )}
                {isConfidential && report.reporter?.email && (
                 <div className="flex items-start justify-between gap-4">
-                  <span className="text-muted-foreground flex items-center gap-2 shrink-0"><User className="h-4 w-4"/>Reporter Email</span>
+                  <span className="text-muted-foreground flex items-center gap-2 shrink-0"><User className="h-4 w-4"/>Submitter Email</span>
                   <span className="font-medium text-right break-all">{report.reporter.email}</span>
                 </div>
               )}
                {isConfidential && report.reporter?.phone && (
                 <div className="flex items-start justify-between gap-4">
-                  <span className="text-muted-foreground flex items-center gap-2 shrink-0"><Phone className="h-4 w-4"/>Reporter Phone</span>
+                  <span className="text-muted-foreground flex items-center gap-2 shrink-0"><Phone className="h-4 w-4"/>Submitter Phone</span>
                   <span className="font-medium text-right break-words">{report.reporter.phone}</span>
                 </div>
               )}
@@ -615,7 +616,7 @@ export default function ReportDetailPage({ params: { id } }: { params: { id: str
                         <div className="flex-1 overflow-hidden">
                             <p className="truncate font-medium">{att.fileName}</p>
                             <p className="text-xs text-muted-foreground truncate">
-                                Uploaded by {uploaderIsReporter ? 'Reporter' : att.uploadedBy.name}
+                                Uploaded by {uploaderIsReporter ? 'Submitter' : att.uploadedBy.name}
                             </p>
                         </div>
                         <span className="text-xs text-muted-foreground shrink-0">{att.uploadedAt ? format(att.uploadedAt.toDate(), "PP") : ''}</span>

@@ -160,7 +160,7 @@ export function ReportsTable({ reports }: { reports: Report[] }) {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
+                      {render(
                         cell.column.columnDef.cell,
                         cell.getContext()
                       )}
@@ -183,7 +183,7 @@ export function ReportsTable({ reports }: { reports: Report[] }) {
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredRowModel().rows.length} report(s).
+          {table.getFilteredRowModel().rows.length} case(s).
         </div>
         <div className="space-x-2">
           <Button

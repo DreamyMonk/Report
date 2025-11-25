@@ -28,7 +28,7 @@ export default function TrackReportPage() {
       toast({
         variant: 'destructive',
         title: 'Invalid ID',
-        description: 'Please enter a valid report ID.',
+        description: 'Please enter a valid submission ID.',
       });
       setIsLoading(false);
       return;
@@ -45,7 +45,7 @@ export default function TrackReportPage() {
       } else {
         toast({
           variant: 'destructive',
-          title: 'Report not found',
+          title: 'Submission not found',
           description: 'Please check the ID and try again.',
         });
       }
@@ -53,7 +53,7 @@ export default function TrackReportPage() {
        toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Could not verify report ID. Please try again later.',
+          description: 'Could not verify submission ID. Please try again later.',
         });
        console.error(error)
     } finally {
@@ -67,9 +67,9 @@ export default function TrackReportPage() {
         <div className="mb-8 flex flex-col items-center">
           <Link href="/" className="mb-4 flex items-center gap-2">
             <Logo className="h-8 w-8 text-primary" />
-            <span className="font-headline text-2xl font-bold">Whistleblower Management Portal</span>
+            <span className="font-headline text-2xl font-bold">Feedback Management</span>
           </Link>
-          <h1 className="text-2xl font-bold">View Your Case</h1>
+          <h1 className="text-2xl font-bold">View Your Submission</h1>
           <p className="text-muted-foreground text-center">Enter the unique ID you received upon submission.</p>
         </div>
         <form onSubmit={handleTrackReport}>

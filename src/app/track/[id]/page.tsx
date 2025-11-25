@@ -82,7 +82,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
             setReport(null);
         }
       } catch (error) {
-        console.error("Error fetching report:", error);
+        console.error("Error fetching case:", error);
         const permissionError = new FirestorePermissionError({ path: `reports collection with id ${id}`, operation: 'list' });
         errorEmitter.emit('permission-error', permissionError);
         setReport(null);
@@ -263,7 +263,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
   };
 
   if (loading) {
-    return <div className="text-center p-12">Loading report...</div>
+    return <div className="text-center p-12">Loading case...</div>
   }
 
   if (!report) {
@@ -288,7 +288,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
     <div className="min-h-screen bg-secondary/50">
         <div className="container mx-auto max-w-4xl py-12 px-4">
             <div className="mb-8 text-center">
-                <h1 className="font-headline text-3xl font-bold tracking-tight">Report Status</h1>
+                <h1 className="font-headline text-3xl font-bold tracking-tight">Case Status</h1>
                 <p className="text-muted-foreground">Tracking ID: <span className="font-mono">{report.id}</span></p>
             </div>
             
@@ -318,7 +318,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                                     <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: statuses?.find(s => s.label === 'In Progress')?.color || '#f97316' }}></div>
                                     <div className="pl-6">
                                     <p className="font-semibold flex items-center gap-2"><Hourglass className="h-4 w-4" />In Progress</p>
-                                    <p className="text-sm text-muted-foreground">A case officer has been assigned and an investigation is underway.</p>
+                                    <p className="text-sm text-muted-foreground">A case officer has been assigned and is reviewing your submission.</p>
                                      <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
                                     </div>
                                 </div>
@@ -327,8 +327,8 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                                <div className="relative">
                                 <div className="absolute left-0 top-1 w-3 h-3 rounded-full" style={{backgroundColor: statuses?.find(s => s.label === 'Report Submitted')?.color || '#3b82f6' }}></div>
                                 <div className="pl-6">
-                                  <p className="font-semibold flex items-center gap-2"><FileText className="h-4 w-4" />Report Submitted</p>
-                                  <p className="text-sm text-muted-foreground">The initial report was received and is awaiting assignment.</p>
+                                  <p className="font-semibold flex items-center gap-2"><FileText className="h-4 w-4" />Submitted</p>
+                                  <p className="text-sm text-muted-foreground">Your submission was received and is awaiting assignment.</p>
                                    <p className="text-xs text-muted-foreground mt-1">{report.submittedAt ? format(report.submittedAt.toDate(), "PPP") : 'N/A'}</p>
                                 </div>
                               </div>
@@ -465,7 +465,7 @@ export default function TrackReportDetailPage({ params }: { params: { id: string
                                   <div className="flex-1 overflow-hidden">
                                     <p className="truncate font-medium">{att.fileName}</p>
                                     <p className="text-xs text-muted-foreground truncate">
-                                        Uploaded by {uploaderIsReporter ? 'Reporter' : att.uploadedBy.name}
+                                        Uploaded by {uploaderIsReporter ? 'Submitter' : att.uploadedBy.name}
                                     </p>
                                   </div>
                                   <span className="text-xs text-muted-foreground shrink-0">{att.uploadedAt ? format(att.uploadedAt.toDate(), "PP") : ''}</span>
