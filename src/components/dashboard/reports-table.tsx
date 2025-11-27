@@ -160,7 +160,7 @@ export function ReportsTable({ reports }: { reports: Report[] }) {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {render(
+                      {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
                       )}

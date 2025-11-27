@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
@@ -18,7 +17,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { createInternalCase } from '@/lib/actions';
 import { useAuth } from '@/firebase/auth-provider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/componentsui/textarea';
+import { Textarea } from '@/components/ui/textarea';
 
 const initialState = {
   message: null,
